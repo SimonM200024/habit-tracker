@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Life Tracker - Work</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="main-nav">
+        <div class="nav-brand">🎯 Life Tracker</div>
+        <div class="nav-links">
+            <a href="index.html">Habits</a>
+            <a href="sleep.html">Sleep</a>
+            <a href="diet.html">Diet</a>
+            <a href="work.html" class="active">Work</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>💼 Work Tracker</h1>
+        
+        <div class="date-nav">
+            <button onclick="changeDate(-1)">← Previous</button>
+            <span class="current-date" id="currentDate"></span>
+            <button onclick="changeDate(1)">Next →</button>
+        </div>
+
+        <div class="section">
+            <h2>Today's Work Summary</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="todayHours">0h</div>
+                    <div class="stat-label">Hours Worked</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="todayTasks">0</div>
+                    <div class="stat-label">Tasks/Projects</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="todayStatus">-</div>
+                    <div class="stat-label">Work Balance</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="targetHoursDisplay">8h</div>
+                    <div class="stat-label">Daily Target</div>
+                </div>
+            </div>
+
+            <div class="progress-container" style="margin-top: 20px;">
+                <div class="progress-header">
+                    <span>Work Hours Progress (Target: 8 hours - No Overtime!)</span>
+                    <span id="hoursProgress">0 / 8 hours</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="hoursProgressFill" style="width: 0%"></div>
+                </div>
+            </div>
+            <p id="workAdvice" style="margin-top: 10px; font-size: 0.9rem; color: rgba(255,255,255,0.7);"></p>
+        </div>
+
+        <div class="section">
+            <h2>📝 Work Log</h2>
+            <div id="workLog"></div>
+            <button class="add-btn" onclick="openWorkModal()">
+                <span>+</span> Add Work Entry
+            </button>
+        </div>
+
+        <div class="section">
+            <h2>📊 Monthly Statistics</h2>
+            <div class="month-nav">
+                <button onclick="changeMonth(-1)">← Prev</button>
+                <h3 id="historyMonth"></h3>
+                <button onclick="changeMonth(1)">Next →</button>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalHours">0h</div>
+                    <div class="stat-label">Total Hours</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avgHours">0h</div>
+                    <div class="stat-label">Avg Hours/Day</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="perfectDays">0</div>
+                    <div class="stat-label">Perfect 8h Days</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="overtimeDays">0</div>
+                    <div class="stat-label">Overtime Days ⚠️</div>
+                </div>
+            </div>
+
+            <div class="progress-container" style="margin-top: 20px;">
+                <div class="progress-header">
+                    <span>Work-Life Balance Score</span>
+                    <span id="balancePercent">0%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="balanceProgressFill" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div class="chart-container" style="margin-top: 30px;">
+                <div class="pie-chart" id="pieChart">
+                    <div class="pie-center">
+                        <span class="pie-percentage" id="piePercent">0%</span>
+                        <span class="pie-label">Balanced Days</span>
+                    </div>
+                </div>
+                <div class="chart-legend">
+                    <div class="legend-item">
+                        <div class="legend-color completed"></div>
+                        <span>On Target (7-9h)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color missed"></div>
+                        <span>Off Target</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📅 Work History</h2>
+            <div id="workHistory"></div>
+        </div>
+    </div>
+
+    <!-- Work Entry Modal -->
+    <div class="modal-overlay" id="workModal">
+        <div class="modal">
+            <h2 id="workModalTitle">Add Work Entry</h2>
+            <div class="form-group">
+                <label for="projectName">Project / Task Name</label>
+                <input type="text" id="projectName" placeholder="e.g., Website redesign">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="startTime">Start Time</label>
+                    <input type="time" id="startTime" value="09:00">
+                </div>
+                <div class="form-group">
+                    <label for="endTime">End Time</label>
+                    <input type="time" id="endTime" value="17:00">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="hoursWorked">Hours Worked (auto-calculated or manual)</label>
+                <input type="number" id="hoursWorked" placeholder="8" min="0" max="24" step="0.25">
+            </div>
+            <div class="form-group">
+                <label for="workCategory">Category</label>
+                <select id="workCategory">
+                    <option value="development">💻 Development</option>
+                    <option value="design">🎨 Design</option>
+                    <option value="meetings">📞 Meetings</option>
+                    <option value="planning">📋 Planning</option>
+                    <option value="research">🔍 Research</option>
+                    <option value="admin">📁 Admin</option>
+                    <option value="other">📌 Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="workNotes">What did you accomplish?</label>
+                <textarea id="workNotes" placeholder="Describe what you worked on, achievements, blockers..."></textarea>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-delete" id="deleteWorkBtn" onclick="deleteWork()" style="display: none;">Delete</button>
+                <button class="btn-cancel" onclick="closeWorkModal()">Cancel</button>
+                <button class="btn-save" onclick="saveWork()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="shared.js"></script>
+    <script>
+        let workData = JSON.parse(localStorage.getItem('workData')) || {};
+        let selectedDate = new Date();
+        let historyMonth = new Date();
+        let editingWorkIndex = null;
+        const TARGET_HOURS = 8;
+
+        function init() {
+            renderDate();
+            renderWorkLog();
+            renderHistory();
+            updateStats();
+            
+            // Auto-calculate hours when times change
+            document.getElementById('startTime').addEventListener('change', calculateHours);
+            document.getElementById('endTime').addEventListener('change', calculateHours);
+        }
+
+        function calculateHours() {
+            const start = document.getElementById('startTime').value;
+            const end = document.getElementById('endTime').value;
+            if (start && end) {
+                const duration = calculateDuration(start, end);
+                document.getElementById('hoursWorked').value = duration.toFixed(2);
+            }
+        }
+
+        function changeDate(delta) {
+            selectedDate.setDate(selectedDate.getDate() + delta);
+            renderDate();
+            renderWorkLog();
+        }
+
+        function renderDate() {
+            document.getElementById('currentDate').textContent = formatDisplayDate(selectedDate);
+        }
+
+        function getDayData(dateKey) {
+            return workData[dateKey] || { entries: [] };
+        }
+
+        function calculateDayTotals(dateKey) {
+            const dayData = getDayData(dateKey);
+            const totalHours = dayData.entries.reduce((sum, entry) => sum + (entry.hours || 0), 0);
+            return {
+                hours: totalHours,
+                tasks: dayData.entries.length
+            };
+        }
+
+        function getWorkStatus(hours) {
+            if (hours === 0) return { text: '-', class: '' };
+            if (hours >= 7 && hours <= 9) return { text: '✓ Perfect', class: 'good' };
+            if (hours < 7) return { text: 'Under', class: 'warning' };
+            return { text: '⚠️ Overtime', class: 'bad' };
+        }
+
+        function renderWorkLog() {
+            const dateKey = formatDate(selectedDate);
+            const dayData = getDayData(dateKey);
+            const totals = calculateDayTotals(dateKey);
+            const status = getWorkStatus(totals.hours);
+            const container = document.getElementById('workLog');
+
+            // Update summary
+            document.getElementById('todayHours').textContent = formatDuration(totals.hours);
+            document.getElementById('todayTasks').textContent = totals.tasks;
+            document.getElementById('todayStatus').textContent = status.text;
+            document.getElementById('todayStatus').className = 'stat-value';
+            if (status.class) {
+                document.getElementById('todayStatus').style.color = 
+                    status.class === 'good' ? '#00ff88' : 
+                    status.class === 'warning' ? '#ffd700' : '#ff6b6b';
+            }
+
+            // Update progress bar
+            const hoursPercent = Math.min((totals.hours / TARGET_HOURS) * 100, 150);
+            document.getElementById('hoursProgress').textContent = `${totals.hours.toFixed(1)} / ${TARGET_HOURS} hours`;
+            document.getElementById('hoursProgressFill').style.width = `${Math.min(hoursPercent, 100)}%`;
+            
+            if (totals.hours > 9) {
+                document.getElementById('hoursProgressFill').style.background = 'linear-gradient(90deg, #ff6b6b, #ff4757)';
+            } else if (totals.hours >= 7) {
+                document.getElementById('hoursProgressFill').style.background = 'linear-gradient(90deg, #00d9ff, #00ff88)';
+            } else {
+                document.getElementById('hoursProgressFill').style.background = 'linear-gradient(90deg, #ffd700, #ffaa00)';
+            }
+
+            // Work advice
+            const advice = document.getElementById('workAdvice');
+            if (totals.hours === 0) {
+                advice.textContent = '📝 No work logged yet. Remember: aim for 8 hours, no more!';
+            } else if (totals.hours < 7) {
+                advice.textContent = `⏰ ${(TARGET_HOURS - totals.hours).toFixed(1)} hours to go. Keep it up!`;
+            } else if (totals.hours <= 9) {
+                advice.textContent = '🎉 Perfect! You hit your target. Time to relax and recharge!';
+            } else {
+                advice.textContent = '⚠️ You\'re working overtime! Remember: rest is important for productivity.';
+            }
+
+            if (dayData.entries.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">💼</div>
+                        <p>No work logged for this day</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const categoryIcons = {
+                development: '💻',
+                design: '🎨',
+                meetings: '📞',
+                planning: '📋',
+                research: '🔍',
+                admin: '📁',
+                other: '📌'
+            };
+
+            let html = dayData.entries.map((entry, index) => `
+                <div class="data-card">
+                    <div class="data-card-header">
+                        <div class="data-card-title">${categoryIcons[entry.category] || '📌'} ${entry.project}</div>
+                        <div class="data-card-actions">
+                            <button onclick="openWorkModal(${index})">Edit</button>
+                            <button class="delete" onclick="deleteWork(${index})">Delete</button>
+                        </div>
+                    </div>
+                    <div class="data-grid" style="margin-bottom: 15px;">
+                        <div class="data-item">
+                            <div class="data-item-value">${formatDuration(entry.hours)}</div>
+                            <div class="data-item-label">Duration</div>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-item-value">${formatTime(entry.startTime)}</div>
+                            <div class="data-item-label">Start</div>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-item-value">${formatTime(entry.endTime)}</div>
+                            <div class="data-item-label">End</div>
+                        </div>
+                    </div>
+                    ${entry.notes ? `
+                        <div class="work-entry-notes" style="padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
+                            <strong style="color: rgba(255,255,255,0.7);">Accomplishments:</strong>
+                            <p style="margin-top: 8px; white-space: pre-wrap;">${entry.notes}</p>
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+
+            container.innerHTML = html;
+        }
+
+        function openWorkModal(index = null) {
+            editingWorkIndex = index;
+            const modal = document.getElementById('workModal');
+            const title = document.getElementById('workModalTitle');
+            const deleteBtn = document.getElementById('deleteWorkBtn');
+            
+            if (index !== null) {
+                const dateKey = formatDate(selectedDate);
+                const entry = getDayData(dateKey).entries[index];
+                document.getElementById('projectName').value = entry.project;
+                document.getElementById('startTime').value = entry.startTime;
+                document.getElementById('endTime').value = entry.endTime;
+                document.getElementById('hoursWorked').value = entry.hours;
+                document.getElementById('workCategory').value = entry.category || 'other';
+                document.getElementById('workNotes').value = entry.notes || '';
+                title.textContent = 'Edit Work Entry';
+                deleteBtn.style.display = 'block';
+            } else {
+                document.getElementById('projectName').value = '';
+                document.getElementById('startTime').value = '09:00';
+                document.getElementById('endTime').value = '17:00';
+                document.getElementById('hoursWorked').value = '8';
+                document.getElementById('workCategory').value = 'development';
+                document.getElementById('workNotes').value = '';
+                title.textContent = 'Add Work Entry';
+                deleteBtn.style.display = 'none';
+            }
+            
+            modal.classList.add('active');
+        }
+
+        function closeWorkModal() {
+            document.getElementById('workModal').classList.remove('active');
+            editingWorkIndex = null;
+        }
+
+        function saveWork() {
+            const project = document.getElementById('projectName').value.trim();
+            const startTime = document.getElementById('startTime').value;
+            const endTime = document.getElementById('endTime').value;
+            const hours = parseFloat(document.getElementById('hoursWorked').value) || 0;
+            const category = document.getElementById('workCategory').value;
+            const notes = document.getElementById('workNotes').value.trim();
+
+            if (!project) {
+                alert('Please enter a project/task name');
+                return;
+            }
+
+            const dateKey = formatDate(selectedDate);
+            if (!workData[dateKey]) {
+                workData[dateKey] = { entries: [] };
+            }
+
+            const entry = { project, startTime, endTime, hours, category, notes };
+
+            if (editingWorkIndex !== null) {
+                workData[dateKey].entries[editingWorkIndex] = entry;
+            } else {
+                workData[dateKey].entries.push(entry);
+            }
+
+            // Check for overtime warning
+            const totals = calculateDayTotals(dateKey);
+            if (totals.hours > 9) {
+                alert('⚠️ Warning: You\'ve logged over 9 hours today. Remember to maintain work-life balance!');
+            }
+
+            localStorage.setItem('workData', JSON.stringify(workData));
+            closeWorkModal();
+            renderWorkLog();
+            renderHistory();
+            updateStats();
+        }
+
+        function deleteWork(index = null) {
+            const idx = index !== null ? index : editingWorkIndex;
+            if (idx === null) return;
+            
+            if (confirm('Delete this work entry?')) {
+                const dateKey = formatDate(selectedDate);
+                workData[dateKey].entries.splice(idx, 1);
+                localStorage.setItem('workData', JSON.stringify(workData));
+                closeWorkModal();
+                renderWorkLog();
+                renderHistory();
+                updateStats();
+            }
+        }
+
+        function changeMonth(delta) {
+            historyMonth.setMonth(historyMonth.getMonth() + delta);
+            renderHistory();
+            updateStats();
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('workHistory');
+            const monthLabel = document.getElementById('historyMonth');
+            
+            const year = historyMonth.getFullYear();
+            const month = historyMonth.getMonth();
+            
+            monthLabel.textContent = historyMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            
+            const lastDay = new Date(year, month + 1, 0).getDate();
+            let html = '';
+            let hasEntries = false;
+
+            for (let day = lastDay; day >= 1; day--) {
+                const date = new Date(year, month, day);
+                const dateKey = formatDate(date);
+                const dayData = getDayData(dateKey);
+
+                if (dayData.entries.length > 0) {
+                    hasEntries = true;
+                    const totals = calculateDayTotals(dateKey);
+                    const status = getWorkStatus(totals.hours);
+
+                    html += `
+                        <div class="data-card">
+                            <div class="data-card-header">
+                                <div class="data-card-title">${formatShortDate(date)}</div>
+                                <span class="status-badge ${status.class}">${status.text}</span>
+                            </div>
+                            <div class="data-grid">
+                                <div class="data-item">
+                                    <div class="data-item-value">${formatDuration(totals.hours)}</div>
+                                    <div class="data-item-label">Hours</div>
+                                </div>
+                                <div class="data-item">
+                                    <div class="data-item-value">${totals.tasks}</div>
+                                    <div class="data-item-label">Tasks</div>
+                                </div>
+                            </div>
+                            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
+                                ${dayData.entries.map(e => `
+                                    <div style="display: flex; justify-content: space-between; padding: 5px 0; font-size: 0.9rem;">
+                                        <span>${e.project}</span>
+                                        <span style="color: rgba(255,255,255,0.6);">${formatDuration(e.hours)}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            if (!hasEntries) {
+                html = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <p>No work entries for this month</p>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+        }
+
+        function updateStats() {
+            const year = historyMonth.getFullYear();
+            const month = historyMonth.getMonth();
+            const today = new Date();
+            
+            const lastDay = new Date(year, month + 1, 0).getDate();
+            const isCurrentMonth = year === today.getFullYear() && month === today.getMonth();
+            const countUntilDay = isCurrentMonth ? today.getDate() : lastDay;
+
+            let totalHours = 0;
+            let perfectDays = 0;
+            let overtimeDays = 0;
+            let loggedDays = 0;
+
+            for (let day = 1; day <= countUntilDay; day++) {
+                const date = new Date(year, month, day);
+                // Skip weekends in calculations (optional)
+                // const dayOfWeek = date.getDay();
+                // if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+                
+                const dateKey = formatDate(date);
+                const dayData = getDayData(dateKey);
+
+                if (dayData.entries.length > 0) {
+                    loggedDays++;
+                    const totals = calculateDayTotals(dateKey);
+                    totalHours += totals.hours;
+
+                    if (totals.hours >= 7 && totals.hours <= 9) {
+                        perfectDays++;
+                    } else if (totals.hours > 9) {
+                        overtimeDays++;
+                    }
+                }
+            }
+
+            document.getElementById('totalHours').textContent = formatDuration(totalHours);
+            document.getElementById('avgHours').textContent = loggedDays > 0 ? formatDuration(totalHours / loggedDays) : '0h';
+            document.getElementById('perfectDays').textContent = perfectDays;
+            document.getElementById('overtimeDays').textContent = overtimeDays;
+
+            // Balance score: percentage of days that were 7-9 hours
+            const balancePercent = loggedDays > 0 ? Math.round((perfectDays / loggedDays) * 100) : 0;
+            document.getElementById('balancePercent').textContent = `${balancePercent}%`;
+            document.getElementById('balanceProgressFill').style.width = `${balancePercent}%`;
+            
+            document.getElementById('piePercent').textContent = `${balancePercent}%`;
+            const pieChart = document.getElementById('pieChart');
+            const completedDeg = (balancePercent / 100) * 360;
+            pieChart.style.background = `conic-gradient(
+                #00d9ff 0deg,
+                #00ff88 ${completedDeg}deg,
+                rgba(255,255,255,0.1) ${completedDeg}deg
+            )`;
+        }
+
+        document.getElementById('workModal').addEventListener('click', function(e) {
+            if (e.target === this) closeWorkModal();
+        });
+
+        init();
+    </script>
+</body>
+</html>
