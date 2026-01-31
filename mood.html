@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Life Tracker - Mood</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="main-nav">
+        <div class="nav-brand">🎯 Life Tracker</div>
+        <div class="nav-links">
+            <a href="dashboard.html">Dashboard</a>
+            <a href="index.html">Habits</a>
+            <a href="sleep.html">Sleep</a>
+            <a href="diet.html">Diet</a>
+            <a href="work.html">Work</a>
+            <a href="mood.html" class="active">Mood</a>
+            <a href="hydration.html">Water</a>
+            <button id="themeToggle" onclick="toggleTheme()">☀️</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>🧘 Mental Health & Mood</h1>
+        
+        <div class="date-nav">
+            <button onclick="changeDate(-1)">← Previous</button>
+            <span class="current-date" id="currentDate"></span>
+            <button onclick="changeDate(1)">Next →</button>
+        </div>
+
+        <div class="section">
+            <h2>How are you feeling today?</h2>
+            <div class="mood-selector" id="moodSelector">
+                <div class="mood-option" data-mood="1" onclick="selectMood(1)">😢</div>
+                <div class="mood-option" data-mood="2" onclick="selectMood(2)">😕</div>
+                <div class="mood-option" data-mood="3" onclick="selectMood(3)">😐</div>
+                <div class="mood-option" data-mood="4" onclick="selectMood(4)">🙂</div>
+                <div class="mood-option" data-mood="5" onclick="selectMood(5)">😄</div>
+            </div>
+            <div style="text-align: center; margin-top: 10px;">
+                <span id="moodLabel" style="color: var(--text-muted);">Select your mood</span>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📝 Journal Entry</h2>
+            <div class="form-group">
+                <label for="gratitude">What are you grateful for today?</label>
+                <textarea id="gratitude" placeholder="Write 3 things you're grateful for..."></textarea>
+            </div>
+            <div class="form-group">
+                <label for="thoughts">How are you feeling? What's on your mind?</label>
+                <textarea id="thoughts" placeholder="Express your thoughts and feelings..."></textarea>
+            </div>
+            <div class="form-group">
+                <label for="wins">Today's wins (big or small)</label>
+                <textarea id="wins" placeholder="What did you accomplish today?"></textarea>
+            </div>
+            <button class="add-btn" onclick="saveEntry()">Save Entry</button>
+        </div>
+
+        <div class="section">
+            <h2>🧠 Mental Health Checklist</h2>
+            <div class="habits-grid" id="mentalChecklist"></div>
+        </div>
+
+        <div class="section">
+            <h2>📊 Mood Statistics</h2>
+            <div class="month-nav">
+                <button onclick="changeMonth(-1)">← Prev</button>
+                <h3 id="historyMonth"></h3>
+                <button onclick="changeMonth(1)">Next →</button>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="avgMood">--</div>
+                    <div class="stat-label">Avg Mood</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="happyDays">0</div>
+                    <div class="stat-label">Happy Days (4-5)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="journalDays">0</div>
+                    <div class="stat-label">Journal Entries</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="moodStreak">0</div>
+                    <div class="stat-label">Tracking Streak</div>
+                </div>
+            </div>
+
+            <div class="progress-container" style="margin-top: 20px;">
+                <div class="progress-header">
+                    <span>Average Mood This Month</span>
+                    <span id="moodProgressLabel">0/5</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="moodProgressFill" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div style="margin-top: 30px;">
+                <h3 style="text-align: center; margin-bottom: 15px;">Mood Calendar</h3>
+                <div class="calendar-grid" id="moodCalendar"></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📅 Journal History</h2>
+            <div id="journalHistory"></div>
+        </div>
+    </div>
+
+    <script src="shared.js"></script>
+    <script>
+        let moodData = JSON.parse(localStorage.getItem('moodData')) || {};
+        let selectedDate = new Date();
+        let historyMonth = new Date();
+        
+        const moodLabels = ['Very Low', 'Low', 'Neutral', 'Good', 'Great'];
+        const moodEmojis = ['😢', '😕', '😐', '🙂', '😄'];
+        
+        const mentalHealthChecks = [
+            { id: 'meditation', name: 'Meditation', description: '10+ minutes', icon: '🧘' },
+            { id: 'exercise', name: 'Physical Activity', description: 'Any movement', icon: '🏃' },
+            { id: 'nature', name: 'Time Outside', description: 'Fresh air & nature', icon: '🌳' },
+            { id: 'social', name: 'Social Connection', description: 'Talk to someone', icon: '👥' },
+            { id: 'screens', name: 'Limited Screens', description: 'Mindful usage', icon: '📵' },
+            { id: 'sleep', name: 'Quality Sleep', description: '7-9 hours', icon: '😴' }
+        ];
+
+        function init() {
+            renderDate();
+            loadEntry();
+            renderMentalChecklist();
+            renderMoodCalendar();
+            updateStats();
+            renderJournalHistory();
+        }
+
+        function changeDate(delta) {
+            saveEntry(false);
+            selectedDate.setDate(selectedDate.getDate() + delta);
+            renderDate();
+            loadEntry();
+            renderMentalChecklist();
+        }
+
+        function renderDate() {
+            document.getElementById('currentDate').textContent = formatDisplayDate(selectedDate);
+        }
+
+        function selectMood(mood) {
+            document.querySelectorAll('.mood-option').forEach(el => el.classList.remove('selected'));
+            document.querySelector(`.mood-option[data-mood="${mood}"]`).classList.add('selected');
+            document.getElementById('moodLabel').textContent = moodLabels[mood - 1];
+            
+            const dateKey = formatDate(selectedDate);
+            if (!moodData[dateKey]) moodData[dateKey] = {};
+            moodData[dateKey].mood = mood;
+            localStorage.setItem('moodData', JSON.stringify(moodData));
+            renderMoodCalendar();
+            updateStats();
+        }
+
+        function loadEntry() {
+            const dateKey = formatDate(selectedDate);
+            const entry = moodData[dateKey] || {};
+            
+            document.querySelectorAll('.mood-option').forEach(el => el.classList.remove('selected'));
+            if (entry.mood) {
+                document.querySelector(`.mood-option[data-mood="${entry.mood}"]`).classList.add('selected');
+                document.getElementById('moodLabel').textContent = moodLabels[entry.mood - 1];
+            } else {
+                document.getElementById('moodLabel').textContent = 'Select your mood';
+            }
+            
+            document.getElementById('gratitude').value = entry.gratitude || '';
+            document.getElementById('thoughts').value = entry.thoughts || '';
+            document.getElementById('wins').value = entry.wins || '';
+        }
+
+        function saveEntry(showAlert = true) {
+            const dateKey = formatDate(selectedDate);
+            const selectedMood = document.querySelector('.mood-option.selected');
+            
+            if (!moodData[dateKey]) moodData[dateKey] = {};
+            
+            if (selectedMood) {
+                moodData[dateKey].mood = parseInt(selectedMood.dataset.mood);
+            }
+            
+            moodData[dateKey].gratitude = document.getElementById('gratitude').value.trim();
+            moodData[dateKey].thoughts = document.getElementById('thoughts').value.trim();
+            moodData[dateKey].wins = document.getElementById('wins').value.trim();
+            
+            const checks = [];
+            document.querySelectorAll('.habit-card.completed').forEach(card => {
+                checks.push(card.dataset.id);
+            });
+            moodData[dateKey].mentalChecks = checks;
+            
+            localStorage.setItem('moodData', JSON.stringify(moodData));
+            
+            if (showAlert) {
+                renderMoodCalendar();
+                updateStats();
+                renderJournalHistory();
+                alert('Entry saved! 💚');
+            }
+        }
+
+        function renderMentalChecklist() {
+            const dateKey = formatDate(selectedDate);
+            const entry = moodData[dateKey] || {};
+            const checks = entry.mentalChecks || [];
+            
+            const container = document.getElementById('mentalChecklist');
+            container.innerHTML = mentalHealthChecks.map(check => `
+                <div class="habit-card ${checks.includes(check.id) ? 'completed' : ''}" 
+                     data-id="${check.id}"
+                     onclick="toggleMentalCheck('${check.id}')">
+                    <div class="habit-checkbox"></div>
+                    <div class="habit-info">
+                        <h3>${check.name}</h3>
+                        <p>${check.description}</p>
+                    </div>
+                    <span class="habit-icon">${check.icon}</span>
+                </div>
+            `).join('');
+        }
+
+        function toggleMentalCheck(id) {
+            const card = document.querySelector(`.habit-card[data-id="${id}"]`);
+            card.classList.toggle('completed');
+            
+            const dateKey = formatDate(selectedDate);
+            if (!moodData[dateKey]) moodData[dateKey] = {};
+            
+            const checks = [];
+            document.querySelectorAll('.habit-card.completed').forEach(c => {
+                checks.push(c.dataset.id);
+            });
+            moodData[dateKey].mentalChecks = checks;
+            localStorage.setItem('moodData', JSON.stringify(moodData));
+        }
+
+        function changeMonth(delta) {
+            historyMonth.setMonth(historyMonth.getMonth() + delta);
+            renderMoodCalendar();
+            updateStats();
+            renderJournalHistory();
+        }
+
+        function renderMoodCalendar() {
+            const container = document.getElementById('moodCalendar');
+            const monthLabel = document.getElementById('historyMonth');
+            
+            const year = historyMonth.getFullYear();
+            const month = historyMonth.getMonth();
+            
+            monthLabel.textContent = historyMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const startDay = firstDay.getDay();
+            
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            let html = days.map(d => `<div class="calendar-header">${d}</div>`).join('');
+            
+            for (let i = 0; i < startDay; i++) {
+                html += '<div class="calendar-day empty"></div>';
+            }
+            
+            const today = new Date();
+            const moodColors = ['#ff6b6b', '#ffa07a', '#ffd700', '#90EE90', '#00ff88'];
+            
+            for (let day = 1; day <= lastDay.getDate(); day++) {
+                const date = new Date(year, month, day);
+                const dateKey = formatDate(date);
+                const entry = moodData[dateKey];
+                const isToday = date.toDateString() === today.toDateString();
+                const isSelected = date.toDateString() === selectedDate.toDateString();
+                
+                let moodIndicator = '';
+                if (entry?.mood) {
+                    moodIndicator = `<div style="font-size: 1.2rem; margin-top: 2px;">${moodEmojis[entry.mood - 1]}</div>`;
+                }
+                
+                html += `
+                    <div class="calendar-day ${isToday ? 'today' : ''} ${isSelected ? 'selected' : ''}" 
+                         onclick="goToDate(${year}, ${month}, ${day})"
+                         style="${entry?.mood ? `background: ${moodColors[entry.mood - 1]}20;` : ''}">
+                        ${day}
+                        ${moodIndicator}
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        }
+
+        function goToDate(year, month, day) {
+            saveEntry(false);
+            selectedDate = new Date(year, month, day);
+            renderDate();
+            loadEntry();
+            renderMentalChecklist();
+            renderMoodCalendar();
+        }
+
+        function updateStats() {
+            const year = historyMonth.getFullYear();
+            const month = historyMonth.getMonth();
+            const today = new Date();
+            
+            const lastDay = new Date(year, month + 1, 0).getDate();
+            const isCurrentMonth = year === today.getFullYear() && month === today.getMonth();
+            const countUntilDay = isCurrentMonth ? today.getDate() : lastDay;
+
+            let totalMood = 0;
+            let moodDays = 0;
+            let happyDays = 0;
+            let journalDays = 0;
+
+            for (let day = 1; day <= countUntilDay; day++) {
+                const date = new Date(year, month, day);
+                const dateKey = formatDate(date);
+                const entry = moodData[dateKey];
+
+                if (entry?.mood) {
+                    moodDays++;
+                    totalMood += entry.mood;
+                    if (entry.mood >= 4) happyDays++;
+                }
+                
+                if (entry?.gratitude || entry?.thoughts || entry?.wins) {
+                    journalDays++;
+                }
+            }
+
+            const avgMood = moodDays > 0 ? (totalMood / moodDays).toFixed(1) : '--';
+            document.getElementById('avgMood').textContent = avgMood !== '--' ? `${avgMood}/5` : '--';
+            document.getElementById('happyDays').textContent = happyDays;
+            document.getElementById('journalDays').textContent = journalDays;
+            
+            let streak = 0;
+            let checkDate = new Date(today);
+            while (true) {
+                const dateKey = formatDate(checkDate);
+                if (moodData[dateKey]?.mood) {
+                    streak++;
+                    checkDate.setDate(checkDate.getDate() - 1);
+                } else {
+                    break;
+                }
+            }
+            document.getElementById('moodStreak').textContent = streak;
+            
+            const moodPercent = avgMood !== '--' ? (parseFloat(avgMood) / 5) * 100 : 0;
+            document.getElementById('moodProgressLabel').textContent = avgMood !== '--' ? `${avgMood}/5` : '0/5';
+            document.getElementById('moodProgressFill').style.width = `${moodPercent}%`;
+        }
+
+        function renderJournalHistory() {
+            const container = document.getElementById('journalHistory');
+            const year = historyMonth.getFullYear();
+            const month = historyMonth.getMonth();
+            const lastDay = new Date(year, month + 1, 0).getDate();
+            
+            let html = '';
+            let hasEntries = false;
+
+            for (let day = lastDay; day >= 1; day--) {
+                const date = new Date(year, month, day);
+                const dateKey = formatDate(date);
+                const entry = moodData[dateKey];
+
+                if (entry && (entry.gratitude || entry.thoughts || entry.wins)) {
+                    hasEntries = true;
+                    html += `
+                        <div class="data-card">
+                            <div class="data-card-header">
+                                <div class="data-card-title">
+                                    ${entry.mood ? moodEmojis[entry.mood - 1] : ''} ${formatShortDate(date)}
+                                </div>
+                                <div class="data-card-actions">
+                                    <button onclick="goToDate(${year}, ${month}, ${day})">Edit</button>
+                                </div>
+                            </div>
+                            ${entry.gratitude ? `
+                                <div style="margin-bottom: 10px;">
+                                    <strong style="color: var(--accent-secondary);">Grateful for:</strong>
+                                    <p style="margin-top: 5px; white-space: pre-wrap;">${entry.gratitude}</p>
+                                </div>
+                            ` : ''}
+                            ${entry.thoughts ? `
+                                <div style="margin-bottom: 10px;">
+                                    <strong style="color: var(--accent-primary);">Thoughts:</strong>
+                                    <p style="margin-top: 5px; white-space: pre-wrap;">${entry.thoughts}</p>
+                                </div>
+                            ` : ''}
+                            ${entry.wins ? `
+                                <div>
+                                    <strong style="color: var(--warning-color);">Wins:</strong>
+                                    <p style="margin-top: 5px; white-space: pre-wrap;">${entry.wins}</p>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }
+            }
+
+            if (!hasEntries) {
+                html = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📝</div>
+                        <p>No journal entries for this month</p>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+        }
+
+        init();
+    </script>
+</body>
+</html>

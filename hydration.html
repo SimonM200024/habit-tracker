@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Life Tracker - Hydration</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="main-nav">
+        <div class="nav-brand">🎯 Life Tracker</div>
+        <div class="nav-links">
+            <a href="dashboard.html">Dashboard</a>
+            <a href="index.html">Habits</a>
+            <a href="sleep.html">Sleep</a>
+            <a href="diet.html">Diet</a>
+            <a href="work.html">Work</a>
+            <a href="mood.html">Mood</a>
+            <a href="hydration.html" class="active">Water</a>
+            <button id="themeToggle" onclick="toggleTheme()">☀️</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>💧 Hydration Tracker</h1>
+        
+        <div class="date-nav">
+            <button onclick="changeDate(-1)">← Previous</button>
+            <span class="current-date" id="currentDate"></span>
+            <button onclick="changeDate(1)">Next →</button>
+        </div>
+
+        <div class="section">
+            <h2>Today's Water Intake</h2>
+            <div style="text-align: center; margin-bottom: 20px;">
+                <div style="font-size: 4rem; font-weight: 700; background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                    <span id="currentGlasses">0</span>/<span id="targetGlasses">8</span>
+                </div>
+                <div style="color: var(--text-muted); font-size: 1.1rem;">glasses (250ml each)</div>
+            </div>
+            
+            <div class="water-glasses" id="waterGlasses"></div>
+            
+            <div style="display: flex; justify-content: center; gap: 15px; margin-top: 20px;">
+                <button class="add-btn" onclick="addGlass()" style="margin: 0;">
+                    <span>+</span> Add Glass
+                </button>
+                <button class="add-btn" onclick="removeGlass()" style="margin: 0; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-light);">
+                    <span>−</span> Remove
+                </button>
+            </div>
+
+            <div class="progress-container" style="margin-top: 30px;">
+                <div class="progress-header">
+                    <span>Daily Progress</span>
+                    <span id="waterPercent">0%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="waterProgressFill" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div id="hydrationStatus" style="text-align: center; margin-top: 15px; font-size: 1.1rem;"></div>
+        </div>
+
+        <div class="section">
+            <h2>⚙️ Settings</h2>
+            <div class="data-card">
+                <div class="form-group">
+                    <label for="dailyTarget">Daily Target (glasses)</label>
+                    <input type="number" id="dailyTarget" value="8" min="1" max="20" onchange="updateTarget()">
+                </div>
+                <div class="form-group">
+                    <label for="glassSize">Glass Size</label>
+                    <select id="glassSize" onchange="updateGlassSize()">
+                        <option value="200">200ml (Small)</option>
+                        <option value="250" selected>250ml (Standard)</option>
+                        <option value="300">300ml (Medium)</option>
+                        <option value="350">350ml (Large)</option>
+                        <option value="500">500ml (Bottle)</option>
+                    </select>
+                </div>
+                <div style="margin-top: 15px; padding: 15px; background: var(--bg-secondary); border-radius: 8px;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>Daily Target:</span>
+                        <span id="totalMl">2000ml</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+                        <span>Current Intake:</span>
+                        <span id="currentMl">0ml</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📊 Monthly Statistics</h2>
+            <div class="month-nav">
+                <button onclick="changeMonth(-1)">← Prev</button>
+                <h3 id="historyMonth"></h3>
+                <button onclick="changeMonth(1)">Next →</button>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="avgGlasses">0</div>
+                    <div class="stat-label">Avg Glasses/Day</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalLiters">0L</div>
+                    <div class="stat-label">Total This Month</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="targetDays">0</div>
+                    <div class="stat-label">Days Met Goal</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="waterStreak">0</div>
+                    <div class="stat-label">Current Streak</div>
+                </div>
+            </div>
+
+            <div class="chart-container" style="margin-top: 30px;">
+                <div class="pie-chart" id="pieChart">
+                    <div class="pie-center">
+                        <span class="pie-percentage" id="piePercent">0%</span>
+                        <span class="pie-label">Goal Met</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📅 Hydration Calendar</h2>
+            <div class="calendar-grid" id="waterCalendar"></div>
+        </div>
+
+        <div class="section">
+            <h2>💡 Hydration Tips</h2>
+            <div class="data-card">
+                <div id="hydrationTip" style="text-align: center; padding: 20px;">
+                    <div style="font-size: 2rem; margin-bottom: 10px;">💡</div>
+                    <p id="tipText" style="font-size: 1.1rem; line-height: 1.6;"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="shared.js"></script>
+    <script>
+        let waterData = JSON.parse(localStorage.getItem('waterData')) || {};
+        let waterTarget = JSON.parse(localStorage.getItem('waterTarget')) || 8;
+        let glassSize = JSON.parse(localStorage.getItem('glassSize')) || 250;
+        let selectedDate = new Date();
+        let historyMonth = new Date();
+
+        const tips = [
+            "Start your day with a glass of water to kickstart your metabolism!",
+            "Keep a water bottle at your desk as a visual reminder to drink.",
+            "Set reminders on your phone every 1-2 hours to take a sip.",
+            "Drink a glass of water before each meal to aid digestion.",
+            "Add lemon, cucumber, or mint for natural flavor without calories.",
+            "Your body often confuses thirst with hunger - drink water first!",
+            "Drink more water during exercise - aim for an extra 500ml per hour.",
+            "Cold water can boost your metabolism slightly.",
+            "Herbal teas count toward your water intake too!",
+            "The color of your urine is a good hydration indicator - aim for pale yellow."
+        ];
+
+        function init() {
+            document.getElementById('dailyTarget').value = waterTarget;
+            document.getElementById('glassSize').value = glassSize;
+            renderDate();
+            renderWaterGlasses();
+            renderCalendar();
+            updateStats();
+            showRandomTip();
+        }
+
+        function changeDate(delta) {
+            selectedDate.setDate(selectedDate.getDate() + delta);
+            renderDate();
+            renderWaterGlasses();
+        }
+
+        function renderDate() {
+            document.getElementById('currentDate').textContent = formatDisplayDate(selectedDate);
+        }
+
+        function renderWaterGlasses() {
+            const dateKey = formatDate(selectedDate);
+            const glasses = waterData[dateKey] || 0;
+            const container = document.getElementById('waterGlasses');
+            
+            let html = '';
+            for (let i = 1; i <= waterTarget; i++) {
+                html += `
+                    <div class="water-glass ${i <= glasses ? 'filled' : ''}" onclick="setGlasses(${i})">
+                        <span>${i}</span>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+            
+            document.getElementById('currentGlasses').textContent = glasses;
+            document.getElementById('targetGlasses').textContent = waterTarget;
+            
+            const percent = Math.min((glasses / waterTarget) * 100, 100);
+            document.getElementById('waterPercent').textContent = `${Math.round(percent)}%`;
+            document.getElementById('waterProgressFill').style.width = `${percent}%`;
+            
+            // Update ml display
+            document.getElementById('totalMl').textContent = `${waterTarget * glassSize}ml`;
+            document.getElementById('currentMl').textContent = `${glasses * glassSize}ml`;
+            
+            // Status message
+            const status = document.getElementById('hydrationStatus');
+            if (glasses === 0) {
+                status.innerHTML = '<span style="color: var(--text-muted);">Start drinking! 💧</span>';
+            } else if (glasses < waterTarget * 0.5) {
+                status.innerHTML = '<span style="color: var(--warning-color);">Keep going! You\'re making progress 🌊</span>';
+            } else if (glasses < waterTarget) {
+                status.innerHTML = '<span style="color: var(--accent-primary);">Almost there! Just a few more glasses 💪</span>';
+            } else {
+                status.innerHTML = '<span style="color: var(--good-color);">🎉 Goal reached! Great job staying hydrated!</span>';
+            }
+        }
+
+        function setGlasses(count) {
+            const dateKey = formatDate(selectedDate);
+            waterData[dateKey] = count;
+            localStorage.setItem('waterData', JSON.stringify(waterData));
+            renderWaterGlasses();
+            renderCalendar();
+            updateStats();
+        }
+
+        function addGlass() {
+            const dateKey = formatDate(selectedDate);
+            const current = waterData[dateKey] || 0;
+            if (current < 20) {
+                waterData[dateKey] = current + 1;
+                localStorage.setItem('waterData', JSON.stringify(waterData));
+                renderWaterGlasses();
+                renderCalendar();
+                updateStats();
+            }
+        }
+
+        function removeGlass() {
+            const dateKey = formatDate(selectedDate);
+            const current = waterData[dateKey] || 0;
+            if (current > 0) {
+                waterData[dateKey] = current - 1;
+                localStorage.setItem('waterData', JSON.stringify(waterData));
+                renderWaterGlasses();
+                renderCalendar();
+                updateStats();
+            }
+        }
+
+        function updateTarget() {
+            waterTarget = parseInt(document.getElementById('dailyTarget').value) || 8;
+            localStorage.setItem('waterTarget', JSON.stringify(waterTarget));
+            renderWaterGlasses();
+            renderCalendar();
+            updateStats();
+        }
+
+        function updateGlassSize() {
+            glassSize = parseInt(document.getElementById('glassSize').value) || 250;
+            localStorage.setItem('glassSize', JSON.stringify(glassSize));
+            renderWaterGlasses();
+        }
+
+        function changeMonth(delta) {
+            historyMonth.setMonth(historyMonth.getMonth() + delta);
+            renderCalendar();
+            updateStats();
+        }
+
+        function renderCalendar() {
+            const container = document.getElementById('waterCalendar');
+            const monthLabel = document.getElementById('historyMonth');
+            
+            const year = historyMonth.getFullYear();
+            const month = historyMonth.getMonth();
+            
+            monthLabel.textContent = historyMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const startDay = firstDay.getDay();
+            
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            let html = days.map(d => `<div class="calendar-header">${d}</div>`).join('');
+            
+            for (let i = 0; i < startDay; i++) {
+                html += '<div class="calendar-day empty"></div>';
+            }
+            
+            const today = new Date();
+            
+            for (let day = 1; day <= lastDay.getDate(); day++) {
+                const date = new Date(year, month, day);
+                const dateKey = formatDate(date);
+                const glasses = waterData[dateKey] || 0;
+                const percent = (glasses / waterTarget) * 100;
+                const isToday = date.toDateString() === today.toDateString();
+                const isSelected = date.toDateString() === selectedDate.toDateString();
+                
+                let dotClass = '';
+                if (percent >= 100) dotClass = 'high';
+                else if (percent >= 50) dotClass = 'medium';
+                else if (percent > 0) dotClass = 'low';
+                
+                html += `
+                    <div class="calendar-day ${isToday ? 'today' : ''} ${isSelected ? 'selected' : ''}" 
+                         onclick="goToDate(${year}, ${month}, ${day})">
+                        ${day}
+                        <div class="completion-dot ${dotClass}"></div>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        }
+
+        function goToDate(year, month, day) {
+            selectedDate = new Date(year, month, day);
+            renderDate();
+            renderWaterGlasses();
+            renderCalendar();
+        }
+
+        function updateStats() {
+            const year = historyMonth.getFullYear();
+            const month = historyMonth.getMonth();
+            const today = new Date();
+            
+            const lastDay = new Date(year, month + 1, 0).getDate();
+            const isCurrentMonth = year === today.getFullYear() && month === today.getMonth();
+            const countUntilDay = isCurrentMonth ? today.getDate() : lastDay;
+
+            let totalGlasses = 0;
+            let targetDays = 0;
+            let daysWithData = 0;
+
+            for (let day = 1; day <= countUntilDay; day++) {
+                const date = new Date(year, month, day);
+                const dateKey = formatDate(date);
+                const glasses = waterData[dateKey] || 0;
+                
+                if (glasses > 0) {
+                    daysWithData++;
+                    totalGlasses += glasses;
+                    if (glasses >= waterTarget) targetDays++;
+                }
+            }
+
+            const avgGlasses = daysWithData > 0 ? (totalGlasses / daysWithData).toFixed(1) : 0;
+            const totalLiters = ((totalGlasses * glassSize) / 1000).toFixed(1);
+            
+            document.getElementById('avgGlasses').textContent = avgGlasses;
+            document.getElementById('totalLiters').textContent = `${totalLiters}L`;
+            document.getElementById('targetDays').textContent = targetDays;
+            
+            // Streak
+            let streak = 0;
+            let checkDate = new Date(today);
+            while (true) {
+                const dateKey = formatDate(checkDate);
+                if ((waterData[dateKey] || 0) >= waterTarget) {
+                    streak++;
+                    checkDate.setDate(checkDate.getDate() - 1);
+                } else {
+                    break;
+                }
+            }
+            document.getElementById('waterStreak').textContent = streak;
+            
+            // Pie chart
+            const goalPercent = daysWithData > 0 ? Math.round((targetDays / daysWithData) * 100) : 0;
+            document.getElementById('piePercent').textContent = `${goalPercent}%`;
+            const pieChart = document.getElementById('pieChart');
+            const completedDeg = (goalPercent / 100) * 360;
+            pieChart.style.background = `conic-gradient(
+                #00d9ff 0deg,
+                #00ff88 ${completedDeg}deg,
+                var(--pie-empty) ${completedDeg}deg
+            )`;
+        }
+
+        function showRandomTip() {
+            const tip = tips[Math.floor(Math.random() * tips.length)];
+            document.getElementById('tipText').textContent = tip;
+        }
+
+        init();
+    </script>
+</body>
+</html>

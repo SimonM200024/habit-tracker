@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Life Tracker - Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="main-nav">
+        <div class="nav-brand">🎯 Life Tracker</div>
+        <div class="nav-links">
+            <a href="dashboard.html" class="active">Dashboard</a>
+            <a href="index.html">Habits</a>
+            <a href="sleep.html">Sleep</a>
+            <a href="diet.html">Diet</a>
+            <a href="work.html">Work</a>
+            <a href="mood.html">Mood</a>
+            <a href="hydration.html">Water</a>
+            <button id="themeToggle" onclick="toggleTheme()">☀️</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>📊 Dashboard Overview</h1>
+        
+        <div class="date-nav">
+            <span class="current-date" id="currentDate"></span>
+        </div>
+
+        <!-- Today's Quick Stats -->
+        <div class="section">
+            <h2>🌟 Today's Snapshot</h2>
+            <div class="dashboard-grid">
+                <div class="dashboard-card">
+                    <div class="dashboard-card-header">
+                        <span class="dashboard-card-title">📋 Habits</span>
+                        <a href="index.html" class="dashboard-card-link">View →</a>
+                    </div>
+                    <div class="dashboard-metric">
+                        <div class="dashboard-metric-value" id="todayHabits">0/0</div>
+                        <div class="dashboard-metric-label">Completed Today</div>
+                    </div>
+                    <div class="mini-progress-bar">
+                        <div class="mini-progress-fill" id="habitsProgress" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="dashboard-card">
+                    <div class="dashboard-card-header">
+                        <span class="dashboard-card-title">😴 Sleep</span>
+                        <a href="sleep.html" class="dashboard-card-link">View →</a>
+                    </div>
+                    <div class="dashboard-metric">
+                        <div class="dashboard-metric-value" id="todaySleep">--</div>
+                        <div class="dashboard-metric-label">Hours Last Night</div>
+                    </div>
+                    <div id="sleepStatus" style="text-align: center; margin-top: 10px;"></div>
+                </div>
+
+                <div class="dashboard-card">
+                    <div class="dashboard-card-header">
+                        <span class="dashboard-card-title">🥗 Diet</span>
+                        <a href="diet.html" class="dashboard-card-link">View →</a>
+                    </div>
+                    <div class="dashboard-metric">
+                        <div class="dashboard-metric-value" id="todayCalories">0</div>
+                        <div class="dashboard-metric-label">Calories Today</div>
+                    </div>
+                    <div class="mini-progress-bar">
+                        <div class="mini-progress-fill" id="caloriesProgress" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="dashboard-card">
+                    <div class="dashboard-card-header">
+                        <span class="dashboard-card-title">💼 Work</span>
+                        <a href="work.html" class="dashboard-card-link">View →</a>
+                    </div>
+                    <div class="dashboard-metric">
+                        <div class="dashboard-metric-value" id="todayWork">0h</div>
+                        <div class="dashboard-metric-label">Hours Worked</div>
+                    </div>
+                    <div id="workStatus" style="text-align: center; margin-top: 10px;"></div>
+                </div>
+
+                <div class="dashboard-card">
+                    <div class="dashboard-card-header">
+                        <span class="dashboard-card-title">🧘 Mood</span>
+                        <a href="mood.html" class="dashboard-card-link">View →</a>
+                    </div>
+                    <div class="dashboard-metric">
+                        <div class="dashboard-metric-value" id="todayMood">--</div>
+                        <div class="dashboard-metric-label">Today's Mood</div>
+                    </div>
+                </div>
+
+                <div class="dashboard-card">
+                    <div class="dashboard-card-header">
+                        <span class="dashboard-card-title">💧 Hydration</span>
+                        <a href="hydration.html" class="dashboard-card-link">View →</a>
+                    </div>
+                    <div class="dashboard-metric">
+                        <div class="dashboard-metric-value" id="todayWater">0/8</div>
+                        <div class="dashboard-metric-label">Glasses Today</div>
+                    </div>
+                    <div class="mini-progress-bar">
+                        <div class="mini-progress-fill" id="waterProgress" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Weekly Overview -->
+        <div class="section">
+            <h2>📅 This Week's Progress</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="weekHabits">0%</div>
+                    <div class="stat-label">Habits Completed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="weekSleep">0h</div>
+                    <div class="stat-label">Avg Sleep</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="weekWork">0h</div>
+                    <div class="stat-label">Total Work Hours</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="weekWater">0%</div>
+                    <div class="stat-label">Hydration Goal</div>
+                </div>
+            </div>
+
+            <div id="weeklyChart" style="margin-top: 20px;">
+                <h3 style="text-align: center; margin-bottom: 15px; color: var(--text-secondary);">Daily Completion Rate</h3>
+                <div class="weekly-bars" id="weeklyBars"></div>
+            </div>
+        </div>
+
+        <!-- Monthly Summary -->
+        <div class="section">
+            <h2>📈 Monthly Summary</h2>
+            <div class="month-nav">
+                <button onclick="changeMonth(-1)">← Prev</button>
+                <h3 id="summaryMonth"></h3>
+                <button onclick="changeMonth(1)">Next →</button>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="monthHabitsPercent">0%</div>
+                    <div class="stat-label">Habits Score</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="monthPerfectDays">0</div>
+                    <div class="stat-label">Perfect Days</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="monthAvgMood">--</div>
+                    <div class="stat-label">Avg Mood</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="monthWorkBalance">0%</div>
+                    <div class="stat-label">Work Balance</div>
+                </div>
+            </div>
+
+            <div class="chart-container" style="margin-top: 30px;">
+                <div class="pie-chart" id="pieChart">
+                    <div class="pie-center">
+                        <span class="pie-percentage" id="overallScore">0%</span>
+                        <span class="pie-label">Overall Score</span>
+                    </div>
+                </div>
+                <div class="chart-legend">
+                    <div class="legend-item">
+                        <div class="legend-color completed"></div>
+                        <span>Achieved</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color missed"></div>
+                        <span>Remaining</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Streaks & Achievements -->
+        <div class="section">
+            <h2>🔥 Current Streaks</h2>
+            <div class="dashboard-grid">
+                <div class="data-card">
+                    <div class="data-card-header">
+                        <span class="data-card-title">📋 Habits Streak</span>
+                    </div>
+                    <div style="text-align: center; padding: 20px 0;">
+                        <div style="font-size: 3rem;" id="habitsStreak">0</div>
+                        <div style="color: var(--text-muted);">days in a row</div>
+                    </div>
+                </div>
+                <div class="data-card">
+                    <div class="data-card-header">
+                        <span class="data-card-title">💧 Hydration Streak</span>
+                    </div>
+                    <div style="text-align: center; padding: 20px 0;">
+                        <div style="font-size: 3rem;" id="waterStreak">0</div>
+                        <div style="color: var(--text-muted);">days in a row</div>
+                    </div>
+                </div>
+                <div class="data-card">
+                    <div class="data-card-header">
+                        <span class="data-card-title">😴 Sleep Schedule Streak</span>
+                    </div>
+                    <div style="text-align: center; padding: 20px 0;">
+                        <div style="font-size: 3rem;" id="sleepStreak">0</div>
+                        <div style="color: var(--text-muted);">days on schedule</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .weekly-bars {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-end;
+            height: 150px;
+            padding: 20px;
+            background: var(--bg-card);
+            border-radius: 12px;
+        }
+        .weekly-bar {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+        }
+        .weekly-bar-fill {
+            width: 30px;
+            background: var(--accent-gradient);
+            border-radius: 5px 5px 0 0;
+            transition: height 0.5s ease;
+            min-height: 5px;
+        }
+        .weekly-bar-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        .weekly-bar-value {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+    </style>
+
+    <script src="shared.js"></script>
+    <script>
+        let summaryMonth = new Date();
+
+        function init() {
+            document.getElementById('currentDate').textContent = formatDisplayDate(new Date());
+            loadTodayStats();
+            loadWeeklyStats();
+            loadMonthlyStats();
+            loadStreaks();
+        }
+
+        function loadTodayStats() {
+            const today = formatDate(new Date());
+            
+            // Habits
+            const habits = JSON.parse(localStorage.getItem('habits')) || [];
+            const completions = JSON.parse(localStorage.getItem('completions')) || {};
+            const todayCompletions = completions[today]?.length || 0;
+            document.getElementById('todayHabits').textContent = `${todayCompletions}/${habits.length}`;
+            const habitsPercent = habits.length > 0 ? (todayCompletions / habits.length) * 100 : 0;
+            document.getElementById('habitsProgress').style.width = `${habitsPercent}%`;
+            
+            // Sleep
+            const sleepData = JSON.parse(localStorage.getItem('sleepData')) || {};
+            const todaySleep = sleepData[today];
+            if (todaySleep) {
+                const duration = calculateDuration(todaySleep.bedtime, todaySleep.wakeTime);
+                document.getElementById('todaySleep').textContent = formatDuration(duration);
+                const sleepStatus = duration >= 7 && duration <= 9 ? 'good' : duration >= 6 ? 'warning' : 'bad';
+                document.getElementById('sleepStatus').innerHTML = `<span class="status-badge ${sleepStatus}">${sleepStatus === 'good' ? '✓ Optimal' : sleepStatus === 'warning' ? 'Fair' : 'Low'}</span>`;
+            } else {
+                document.getElementById('todaySleep').textContent = '--';
+                document.getElementById('sleepStatus').innerHTML = '<span style="color: var(--text-muted);">Not logged</span>';
+            }
+            
+            // Diet
+            const dietData = JSON.parse(localStorage.getItem('dietData')) || {};
+            const dietTargets = JSON.parse(localStorage.getItem('dietTargets')) || { calories: 2000 };
+            const todayDiet = dietData[today]?.foods || [];
+            const todayCalories = todayDiet.reduce((sum, f) => sum + (f.calories || 0), 0);
+            document.getElementById('todayCalories').textContent = todayCalories;
+            const calPercent = Math.min((todayCalories / dietTargets.calories) * 100, 100);
+            document.getElementById('caloriesProgress').style.width = `${calPercent}%`;
+            
+            // Work
+            const workData = JSON.parse(localStorage.getItem('workData')) || {};
+            const todayWork = workData[today]?.entries || [];
+            const todayWorkHours = todayWork.reduce((sum, e) => sum + (e.hours || 0), 0);
+            document.getElementById('todayWork').textContent = formatDuration(todayWorkHours);
+            const workStatus = todayWorkHours >= 7 && todayWorkHours <= 9 ? 'good' : todayWorkHours > 9 ? 'bad' : 'warning';
+            if (todayWorkHours > 0) {
+                document.getElementById('workStatus').innerHTML = `<span class="status-badge ${workStatus}">${workStatus === 'good' ? '✓ Balanced' : workStatus === 'bad' ? '⚠️ Overtime' : 'In Progress'}</span>`;
+            } else {
+                document.getElementById('workStatus').innerHTML = '<span style="color: var(--text-muted);">Not logged</span>';
+            }
+            
+            // Mood
+            const moodData = JSON.parse(localStorage.getItem('moodData')) || {};
+            const todayMood = moodData[today];
+            const moodEmojis = ['😢', '😕', '😐', '🙂', '😄'];
+            if (todayMood) {
+                document.getElementById('todayMood').textContent = moodEmojis[todayMood.mood - 1];
+            } else {
+                document.getElementById('todayMood').textContent = '--';
+            }
+            
+            // Water
+            const waterData = JSON.parse(localStorage.getItem('waterData')) || {};
+            const waterTarget = JSON.parse(localStorage.getItem('waterTarget')) || 8;
+            const todayWater = waterData[today] || 0;
+            document.getElementById('todayWater').textContent = `${todayWater}/${waterTarget}`;
+            const waterPercent = Math.min((todayWater / waterTarget) * 100, 100);
+            document.getElementById('waterProgress').style.width = `${waterPercent}%`;
+        }
+
+        function loadWeeklyStats() {
+            const today = new Date();
+            const weekStart = new Date(today);
+            weekStart.setDate(today.getDate() - today.getDay());
+            
+            const habits = JSON.parse(localStorage.getItem('habits')) || [];
+            const completions = JSON.parse(localStorage.getItem('completions')) || {};
+            const sleepData = JSON.parse(localStorage.getItem('sleepData')) || {};
+            const workData = JSON.parse(localStorage.getItem('workData')) || {};
+            const waterData = JSON.parse(localStorage.getItem('waterData')) || {};
+            const waterTarget = JSON.parse(localStorage.getItem('waterTarget')) || 8;
+            
+            let totalHabits = 0, completedHabits = 0;
+            let totalSleep = 0, sleepDays = 0;
+            let totalWork = 0;
+            let totalWater = 0, waterDays = 0;
+            const dailyScores = [];
+            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(weekStart);
+                date.setDate(weekStart.getDate() + i);
+                const dateKey = formatDate(date);
+                
+                // Habits
+                const dayCompletions = completions[dateKey]?.length || 0;
+                if (date <= today) {
+                    totalHabits += habits.length;
+                    completedHabits += dayCompletions;
+                }
+                
+                // Sleep
+                if (sleepData[dateKey]) {
+                    const duration = calculateDuration(sleepData[dateKey].bedtime, sleepData[dateKey].wakeTime);
+                    totalSleep += duration;
+                    sleepDays++;
+                }
+                
+                // Work
+                const dayWork = workData[dateKey]?.entries || [];
+                totalWork += dayWork.reduce((sum, e) => sum + (e.hours || 0), 0);
+                
+                // Water
+                if (waterData[dateKey]) {
+                    totalWater += waterData[dateKey];
+                    waterDays++;
+                }
+                
+                // Daily score for chart
+                const dayScore = habits.length > 0 ? Math.round((dayCompletions / habits.length) * 100) : 0;
+                dailyScores.push({ day: dayNames[i], score: date <= today ? dayScore : null });
+            }
+            
+            document.getElementById('weekHabits').textContent = totalHabits > 0 ? `${Math.round((completedHabits / totalHabits) * 100)}%` : '0%';
+            document.getElementById('weekSleep').textContent = sleepDays > 0 ? formatDuration(totalSleep / sleepDays) : '0h';
+            document.getElementById('weekWork').textContent = formatDuration(totalWork);
+            document.getElementById('weekWater').textContent = waterDays > 0 ? `${Math.round((totalWater / (waterDays * waterTarget)) * 100)}%` : '0%';
+            
+            // Render weekly chart
+            const barsContainer = document.getElementById('weeklyBars');
+            barsContainer.innerHTML = dailyScores.map(d => `
+                <div class="weekly-bar">
+                    <div class="weekly-bar-value">${d.score !== null ? d.score + '%' : ''}</div>
+                    <div class="weekly-bar-fill" style="height: ${d.score !== null ? Math.max(d.score, 5) : 0}px;"></div>
+                    <div class="weekly-bar-label">${d.day}</div>
+                </div>
+            `).join('');
+        }
+
+        function changeMonth(delta) {
+            summaryMonth.setMonth(summaryMonth.getMonth() + delta);
+            loadMonthlyStats();
+        }
+
+        function loadMonthlyStats() {
+            const year = summaryMonth.getFullYear();
+            const month = summaryMonth.getMonth();
+            document.getElementById('summaryMonth').textContent = summaryMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            
+            const today = new Date();
+            const lastDay = new Date(year, month + 1, 0).getDate();
+            const isCurrentMonth = year === today.getFullYear() && month === today.getMonth();
+            const countUntilDay = isCurrentMonth ? today.getDate() : lastDay;
+            
+            const habits = JSON.parse(localStorage.getItem('habits')) || [];
+            const completions = JSON.parse(localStorage.getItem('completions')) || {};
+            const moodData = JSON.parse(localStorage.getItem('moodData')) || {};
+            const workData = JSON.parse(localStorage.getItem('workData')) || {};
+            
+            let totalHabits = 0, completedHabits = 0, perfectDays = 0;
+            let totalMood = 0, moodDays = 0;
+            let balancedWorkDays = 0, workDays = 0;
+            
+            for (let day = 1; day <= countUntilDay; day++) {
+                const date = new Date(year, month, day);
+                const dateKey = formatDate(date);
+                
+                // Habits
+                const dayCompletions = completions[dateKey]?.length || 0;
+                totalHabits += habits.length;
+                completedHabits += dayCompletions;
+                if (dayCompletions === habits.length && habits.length > 0) perfectDays++;
+                
+                // Mood
+                if (moodData[dateKey]) {
+                    totalMood += moodData[dateKey].mood;
+                    moodDays++;
+                }
+                
+                // Work
+                const dayWork = workData[dateKey]?.entries || [];
+                if (dayWork.length > 0) {
+                    workDays++;
+                    const dayHours = dayWork.reduce((sum, e) => sum + (e.hours || 0), 0);
+                    if (dayHours >= 7 && dayHours <= 9) balancedWorkDays++;
+                }
+            }
+            
+            const habitsPercent = totalHabits > 0 ? Math.round((completedHabits / totalHabits) * 100) : 0;
+            const avgMood = moodDays > 0 ? (totalMood / moodDays).toFixed(1) : '--';
+            const workBalance = workDays > 0 ? Math.round((balancedWorkDays / workDays) * 100) : 0;
+            
+            document.getElementById('monthHabitsPercent').textContent = `${habitsPercent}%`;
+            document.getElementById('monthPerfectDays').textContent = perfectDays;
+            document.getElementById('monthAvgMood').textContent = avgMood !== '--' ? `${avgMood}/5` : '--';
+            document.getElementById('monthWorkBalance').textContent = `${workBalance}%`;
+            
+            // Overall score (average of habits and work balance)
+            const overallScore = Math.round((habitsPercent + workBalance) / 2);
+            document.getElementById('overallScore').textContent = `${overallScore}%`;
+            const pieChart = document.getElementById('pieChart');
+            const completedDeg = (overallScore / 100) * 360;
+            pieChart.style.background = `conic-gradient(
+                #00d9ff 0deg,
+                #00ff88 ${completedDeg}deg,
+                var(--pie-empty) ${completedDeg}deg
+            )`;
+        }
+
+        function loadStreaks() {
+            const today = new Date();
+            const habits = JSON.parse(localStorage.getItem('habits')) || [];
+            const completions = JSON.parse(localStorage.getItem('completions')) || {};
+            const waterData = JSON.parse(localStorage.getItem('waterData')) || {};
+            const waterTarget = JSON.parse(localStorage.getItem('waterTarget')) || 8;
+            const sleepData = JSON.parse(localStorage.getItem('sleepData')) || {};
+            
+            // Habits streak
+            let habitsStreak = 0;
+            let checkDate = new Date(today);
+            while (true) {
+                const dateKey = formatDate(checkDate);
+                const dayCompletions = completions[dateKey]?.length || 0;
+                if (dayCompletions === habits.length && habits.length > 0) {
+                    habitsStreak++;
+                    checkDate.setDate(checkDate.getDate() - 1);
+                } else {
+                    break;
+                }
+            }
+            document.getElementById('habitsStreak').textContent = habitsStreak;
+            
+            // Water streak
+            let waterStreak = 0;
+            checkDate = new Date(today);
+            while (true) {
+                const dateKey = formatDate(checkDate);
+                if ((waterData[dateKey] || 0) >= waterTarget) {
+                    waterStreak++;
+                    checkDate.setDate(checkDate.getDate() - 1);
+                } else {
+                    break;
+                }
+            }
+            document.getElementById('waterStreak').textContent = waterStreak;
+            
+            // Sleep streak
+            let sleepStreak = 0;
+            checkDate = new Date(today);
+            while (true) {
+                const dateKey = formatDate(checkDate);
+                const sleep = sleepData[dateKey];
+                if (sleep) {
+                    const [bedH] = sleep.bedtime.split(':').map(Number);
+                    const [wakeH] = sleep.wakeTime.split(':').map(Number);
+                    const bedOnTarget = bedH >= 21 && bedH <= 23;
+                    const wakeOnTarget = wakeH >= 5 && wakeH <= 7;
+                    if (bedOnTarget && wakeOnTarget) {
+                        sleepStreak++;
+                        checkDate.setDate(checkDate.getDate() - 1);
+                    } else {
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            }
+            document.getElementById('sleepStreak').textContent = sleepStreak;
+        }
+
+        init();
+    </script>
+</body>
+</html>

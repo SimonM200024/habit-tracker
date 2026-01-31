@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Life Tracker - Sleep</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="main-nav">
+        <div class="nav-brand">🎯 Life Tracker</div>
+        <div class="nav-links">
+            <a href="dashboard.html">Dashboard</a>
+            <a href="index.html">Habits</a>
+            <a href="sleep.html" class="active">Sleep</a>
+            <a href="diet.html">Diet</a>
+            <a href="work.html">Work</a>
+            <a href="mood.html">Mood</a>
+            <a href="hydration.html">Water</a>
+            <button id="themeToggle" onclick="toggleTheme()">☀️</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>😴 Sleep Tracker</h1>
+        
+        <div class="date-nav">
+            <button onclick="changeDate(-1)">← Previous</button>
+            <span class="current-date" id="currentDate"></span>
+            <button onclick="changeDate(1)">Next →</button>
+        </div>
+
+        <div class="section">
+            <h2>Tonight's Sleep</h2>
+            <div id="sleepEntry">
+                <!-- Will be filled by JS -->
+            </div>
+            <button class="add-btn" id="addSleepBtn" onclick="openModal()">
+                <span>+</span> Log Sleep
+            </button>
+        </div>
+
+        <div class="section">
+            <h2>📊 Sleep Statistics This Month</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="avgSleep">0h</div>
+                    <div class="stat-label">Avg Sleep</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avgBedtime">--:--</div>
+                    <div class="stat-label">Avg Bedtime</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avgWakeup">--:--</div>
+                    <div class="stat-label">Avg Wake Time</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="targetHits">0</div>
+                    <div class="stat-label">Target Hits (22:00-6:00)</div>
+                </div>
+            </div>
+
+            <div class="progress-container">
+                <div class="progress-header">
+                    <span>Sleep Schedule Consistency (22:00-6:00 target)</span>
+                    <span id="sleepProgressPercent">0%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="sleepProgressFill" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div class="chart-container" style="margin-top: 30px;">
+                <div class="pie-chart" id="pieChart">
+                    <div class="pie-center">
+                        <span class="pie-percentage" id="piePercent">0%</span>
+                        <span class="pie-label">On Schedule</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📅 Sleep History</h2>
+            <div class="month-nav">
+                <button onclick="changeMonth(-1)">← Prev</button>
+                <h3 id="historyMonth"></h3>
+                <button onclick="changeMonth(1)">Next →</button>
+            </div>
+            <div id="sleepHistory">
+                <!-- Will be filled by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Sleep Modal -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <h2 id="modalTitle">Log Sleep</h2>
+            <div class="form-group">
+                <label for="bedtime">Bedtime (when you went to sleep)</label>
+                <input type="time" id="bedtime" value="22:00">
+            </div>
+            <div class="form-group">
+                <label for="wakeTime">Wake Time (when you woke up)</label>
+                <input type="time" id="wakeTime" value="06:00">
+            </div>
+            <div class="form-group">
+                <label for="sleepQuality">Sleep Quality</label>
+                <select id="sleepQuality">
+                    <option value="5">⭐⭐⭐⭐⭐ Excellent</option>
+                    <option value="4">⭐⭐⭐⭐ Good</option>
+                    <option value="3" selected>⭐⭐⭐ Average</option>
+                    <option value="2">⭐⭐ Poor</option>
+                    <option value="1">⭐ Terrible</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="sleepNotes">Notes (optional)</label>
+                <textarea id="sleepNotes" placeholder="How did you feel? Any disturbances?"></textarea>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-delete" id="deleteBtn" onclick="deleteSleep()" style="display: none;">Delete</button>
+                <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+                <button class="btn-save" onclick="saveSleep()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="shared.js"></script>
+    <script>
+        let sleepData = JSON.parse(localStorage.getItem('sleepData')) || {};
+        let selectedDate = new Date();
+        let historyMonth = new Date();
+        let editingDate = null;
+
+        function init() {
+            renderDate();
+            renderSleepEntry();
+            renderHistory();
+            updateStats();
+        }
+
+        function changeDate(delta) {
+            selectedDate.setDate(selectedDate.getDate() + delta);
+            renderDate();
+            renderSleepEntry();
+        }
+
+        function renderDate() {
+            document.getElementById('currentDate').textContent = formatDisplayDate(selectedDate);
+        }
+
+        function renderSleepEntry() {
+            const dateKey = formatDate(selectedDate);
+            const entry = sleepData[dateKey];
+            const container = document.getElementById('sleepEntry');
+            const addBtn = document.getElementById('addSleepBtn');
+
+            if (entry) {
+                const duration = calculateDuration(entry.bedtime, entry.wakeTime);
+                const bedtimeOnTarget = isBedtimeOnTarget(entry.bedtime);
+                const wakeOnTarget = isWakeOnTarget(entry.wakeTime);
+                
+                container.innerHTML = `
+                    <div class="data-card">
+                        <div class="data-card-header">
+                            <div class="data-card-title">Sleep Log</div>
+                            <div class="data-card-actions">
+                                <button onclick="openModal('${dateKey}')">Edit</button>
+                                <button class="delete" onclick="deleteSleep('${dateKey}')">Delete</button>
+                            </div>
+                        </div>
+                        <div class="data-grid">
+                            <div class="data-item">
+                                <div class="data-item-value">${formatTime(entry.bedtime)}</div>
+                                <div class="data-item-label">Bedtime</div>
+                                <span class="status-badge ${bedtimeOnTarget ? 'good' : 'warning'}">${bedtimeOnTarget ? '✓ On target' : 'Off target'}</span>
+                            </div>
+                            <div class="data-item">
+                                <div class="data-item-value">${formatTime(entry.wakeTime)}</div>
+                                <div class="data-item-label">Wake Time</div>
+                                <span class="status-badge ${wakeOnTarget ? 'good' : 'warning'}">${wakeOnTarget ? '✓ On target' : 'Off target'}</span>
+                            </div>
+                            <div class="data-item">
+                                <div class="data-item-value">${formatDuration(duration)}</div>
+                                <div class="data-item-label">Total Sleep</div>
+                                <span class="status-badge ${duration >= 7 && duration <= 9 ? 'good' : duration >= 6 ? 'warning' : 'bad'}">${duration >= 7 && duration <= 9 ? 'Optimal' : duration >= 6 ? 'Fair' : 'Low'}</span>
+                            </div>
+                            <div class="data-item">
+                                <div class="data-item-value">${'⭐'.repeat(entry.quality)}</div>
+                                <div class="data-item-label">Quality</div>
+                            </div>
+                        </div>
+                        ${entry.notes ? `<div class="notes-text" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">${entry.notes}</div>` : ''}
+                    </div>
+                `;
+                addBtn.style.display = 'none';
+            } else {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🌙</div>
+                        <p>No sleep logged for this day</p>
+                    </div>
+                `;
+                addBtn.style.display = 'flex';
+            }
+        }
+
+        function isBedtimeOnTarget(bedtime) {
+            if (!bedtime) return false;
+            const [h, m] = bedtime.split(':').map(Number);
+            // Target: 22:00 (allow 21:30 - 22:30)
+            const minutes = h * 60 + m;
+            return (minutes >= 21 * 60 + 30 && minutes <= 22 * 60 + 30) || 
+                   (minutes >= 0 && minutes <= 30); // Also allow shortly after midnight if sleep late
+        }
+
+        function isWakeOnTarget(wakeTime) {
+            if (!wakeTime) return false;
+            const [h, m] = wakeTime.split(':').map(Number);
+            // Target: 6:00 (allow 5:30 - 6:30)
+            const minutes = h * 60 + m;
+            return minutes >= 5 * 60 + 30 && minutes <= 6 * 60 + 30;
+        }
+
+        function openModal(dateKey = null) {
+            editingDate = dateKey || formatDate(selectedDate);
+            const modal = document.getElementById('modalOverlay');
+            const title = document.getElementById('modalTitle');
+            const deleteBtn = document.getElementById('deleteBtn');
+            
+            const entry = sleepData[editingDate];
+            
+            if (entry) {
+                document.getElementById('bedtime').value = entry.bedtime;
+                document.getElementById('wakeTime').value = entry.wakeTime;
+                document.getElementById('sleepQuality').value = entry.quality;
+                document.getElementById('sleepNotes').value = entry.notes || '';
+                title.textContent = 'Edit Sleep Log';
+                deleteBtn.style.display = 'block';
+            } else {
+                document.getElementById('bedtime').value = '22:00';
+                document.getElementById('wakeTime').value = '06:00';
+                document.getElementById('sleepQuality').value = '3';
+                document.getElementById('sleepNotes').value = '';
+                title.textContent = 'Log Sleep';
+                deleteBtn.style.display = 'none';
+            }
+            
+            modal.classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('modalOverlay').classList.remove('active');
+            editingDate = null;
+        }
+
+        function saveSleep() {
+            const bedtime = document.getElementById('bedtime').value;
+            const wakeTime = document.getElementById('wakeTime').value;
+            const quality = parseInt(document.getElementById('sleepQuality').value);
+            const notes = document.getElementById('sleepNotes').value.trim();
+
+            if (!bedtime || !wakeTime) {
+                alert('Please enter both bedtime and wake time');
+                return;
+            }
+
+            sleepData[editingDate] = {
+                bedtime,
+                wakeTime,
+                quality,
+                notes
+            };
+
+            localStorage.setItem('sleepData', JSON.stringify(sleepData));
+            closeModal();
+            renderSleepEntry();
+            renderHistory();
+            updateStats();
+        }
+
+        function deleteSleep(dateKey = null) {
+            const key = dateKey || editingDate;
+            if (confirm('Are you sure you want to delete this sleep log?')) {
+                delete sleepData[key];
+                localStorage.setItem('sleepData', JSON.stringify(sleepData));
+                closeModal();
+                renderSleepEntry();
+                renderHistory();
+                updateStats();
+            }
+        }
+
+        function changeMonth(delta) {
+            historyMonth.setMonth(historyMonth.getMonth() + delta);
+            renderHistory();
+            updateStats();
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('sleepHistory');
+            const monthLabel = document.getElementById('historyMonth');
+            
+            const year = historyMonth.getFullYear();
+            const month = historyMonth.getMonth();
+            
+            monthLabel.textContent = historyMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            
+            const lastDay = new Date(year, month + 1, 0).getDate();
+            let html = '';
+            let hasEntries = false;
+
+            for (let day = lastDay; day >= 1; day--) {
+                const date = new Date(year, month, day);
+                const dateKey = formatDate(date);
+                const entry = sleepData[dateKey];
+
+                if (entry) {
+                    hasEntries = true;
+                    const duration = calculateDuration(entry.bedtime, entry.wakeTime);
+                    html += `
+                        <div class="data-card">
+                            <div class="data-card-header">
+                                <div class="data-card-title">${formatShortDate(date)}</div>
+                                <div class="data-card-actions">
+                                    <button onclick="openModal('${dateKey}')">Edit</button>
+                                </div>
+                            </div>
+                            <div class="data-grid">
+                                <div class="data-item">
+                                    <div class="data-item-value">${formatTime(entry.bedtime)}</div>
+                                    <div class="data-item-label">Bedtime</div>
+                                </div>
+                                <div class="data-item">
+                                    <div class="data-item-value">${formatTime(entry.wakeTime)}</div>
+                                    <div class="data-item-label">Wake</div>
+                                </div>
+                                <div class="data-item">
+                                    <div class="data-item-value">${formatDuration(duration)}</div>
+                                    <div class="data-item-label">Duration</div>
+                                </div>
+                                <div class="data-item">
+                                    <div class="data-item-value">${'⭐'.repeat(entry.quality)}</div>
+                                    <div class="data-item-label">Quality</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            if (!hasEntries) {
+                html = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <p>No sleep entries for this month</p>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+        }
+
+        function updateStats() {
+            const year = historyMonth.getFullYear();
+            const month = historyMonth.getMonth();
+            const today = new Date();
+            
+            const lastDay = new Date(year, month + 1, 0).getDate();
+            const isCurrentMonth = year === today.getFullYear() && month === today.getMonth();
+            const countUntilDay = isCurrentMonth ? today.getDate() : lastDay;
+
+            let totalSleep = 0;
+            let totalBedtimeMinutes = 0;
+            let totalWakeMinutes = 0;
+            let targetHits = 0;
+            let entriesCount = 0;
+            let daysWithData = 0;
+
+            for (let day = 1; day <= countUntilDay; day++) {
+                const date = new Date(year, month, day);
+                const dateKey = formatDate(date);
+                const entry = sleepData[dateKey];
+                daysWithData++;
+
+                if (entry) {
+                    entriesCount++;
+                    const duration = calculateDuration(entry.bedtime, entry.wakeTime);
+                    totalSleep += duration;
+
+                    const [bedH, bedM] = entry.bedtime.split(':').map(Number);
+                    let bedMinutes = bedH * 60 + bedM;
+                    if (bedH < 12) bedMinutes += 24 * 60; // Adjust for after midnight
+                    totalBedtimeMinutes += bedMinutes;
+
+                    const [wakeH, wakeM] = entry.wakeTime.split(':').map(Number);
+                    totalWakeMinutes += wakeH * 60 + wakeM;
+
+                    if (isBedtimeOnTarget(entry.bedtime) && isWakeOnTarget(entry.wakeTime)) {
+                        targetHits++;
+                    }
+                }
+            }
+
+            // Calculate averages
+            if (entriesCount > 0) {
+                const avgSleepHours = totalSleep / entriesCount;
+                document.getElementById('avgSleep').textContent = formatDuration(avgSleepHours);
+
+                let avgBedMinutes = Math.round(totalBedtimeMinutes / entriesCount);
+                if (avgBedMinutes >= 24 * 60) avgBedMinutes -= 24 * 60;
+                const avgBedH = Math.floor(avgBedMinutes / 60);
+                const avgBedM = avgBedMinutes % 60;
+                document.getElementById('avgBedtime').textContent = `${avgBedH.toString().padStart(2, '0')}:${avgBedM.toString().padStart(2, '0')}`;
+
+                const avgWakeMinutes = Math.round(totalWakeMinutes / entriesCount);
+                const avgWakeH = Math.floor(avgWakeMinutes / 60);
+                const avgWakeM = avgWakeMinutes % 60;
+                document.getElementById('avgWakeup').textContent = `${avgWakeH.toString().padStart(2, '0')}:${avgWakeM.toString().padStart(2, '0')}`;
+
+                document.getElementById('targetHits').textContent = targetHits;
+
+                const percent = Math.round((targetHits / entriesCount) * 100);
+                document.getElementById('sleepProgressPercent').textContent = `${percent}%`;
+                document.getElementById('sleepProgressFill').style.width = `${percent}%`;
+                document.getElementById('piePercent').textContent = `${percent}%`;
+                
+                const pieChart = document.getElementById('pieChart');
+                const completedDeg = (percent / 100) * 360;
+                pieChart.style.background = `conic-gradient(
+                    #00d9ff 0deg,
+                    #00ff88 ${completedDeg}deg,
+                    rgba(255,255,255,0.1) ${completedDeg}deg
+                )`;
+            } else {
+                document.getElementById('avgSleep').textContent = '0h';
+                document.getElementById('avgBedtime').textContent = '--:--';
+                document.getElementById('avgWakeup').textContent = '--:--';
+                document.getElementById('targetHits').textContent = '0';
+                document.getElementById('sleepProgressPercent').textContent = '0%';
+                document.getElementById('sleepProgressFill').style.width = '0%';
+                document.getElementById('piePercent').textContent = '0%';
+                document.getElementById('pieChart').style.background = 'rgba(255,255,255,0.1)';
+            }
+        }
+
+        document.getElementById('modalOverlay').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+
+        init();
+    </script>
+</body>
+</html>

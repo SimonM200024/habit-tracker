@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Life Tracker - Diet</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="main-nav">
+        <div class="nav-brand">🎯 Life Tracker</div>
+        <div class="nav-links">
+            <a href="dashboard.html">Dashboard</a>
+            <a href="index.html">Habits</a>
+            <a href="sleep.html">Sleep</a>
+            <a href="diet.html" class="active">Diet</a>
+            <a href="work.html">Work</a>
+            <a href="mood.html">Mood</a>
+            <a href="hydration.html">Water</a>
+            <button id="themeToggle" onclick="toggleTheme()">☀️</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>🥗 Diet Tracker</h1>
+        
+        <div class="date-nav">
+            <button onclick="changeDate(-1)">← Previous</button>
+            <span class="current-date" id="currentDate"></span>
+            <button onclick="changeDate(1)">Next →</button>
+        </div>
+
+        <div class="section">
+            <h2>Today's Summary</h2>
+            <div class="stats-grid" id="todaySummary">
+                <div class="stat-card">
+                    <div class="stat-value" id="todayCalories">0</div>
+                    <div class="stat-label">Calories</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="todayProtein">0g</div>
+                    <div class="stat-label">Protein</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="todayCarbs">0g</div>
+                    <div class="stat-label">Carbs</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="todayFat">0g</div>
+                    <div class="stat-label">Fat</div>
+                </div>
+            </div>
+
+            <div class="progress-container" style="margin-top: 20px;">
+                <div class="progress-header">
+                    <span>Calorie Target Progress</span>
+                    <span id="calorieProgress">0 / 2000 kcal</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="calorieProgressFill" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🍽️ Food Log</h2>
+            <div id="foodLog"></div>
+            <button class="add-btn" onclick="openFoodModal()">
+                <span>+</span> Add Food
+            </button>
+        </div>
+
+        <div class="section">
+            <h2>⚙️ Daily Targets</h2>
+            <div class="data-card">
+                <div class="data-grid">
+                    <div class="data-item">
+                        <div class="data-item-value" id="targetCalDisplay">2000</div>
+                        <div class="data-item-label">Calories</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-item-value" id="targetProtDisplay">150g</div>
+                        <div class="data-item-label">Protein</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-item-value" id="targetCarbsDisplay">250g</div>
+                        <div class="data-item-label">Carbs</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-item-value" id="targetFatDisplay">65g</div>
+                        <div class="data-item-label">Fat</div>
+                    </div>
+                </div>
+                <button class="add-btn" style="margin-top: 15px;" onclick="openTargetModal()">Edit Targets</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📊 Monthly Statistics</h2>
+            <div class="month-nav">
+                <button onclick="changeMonth(-1)">← Prev</button>
+                <h3 id="historyMonth"></h3>
+                <button onclick="changeMonth(1)">Next →</button>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="avgCalories">0</div>
+                    <div class="stat-label">Avg Calories</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avgProtein">0g</div>
+                    <div class="stat-label">Avg Protein</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="targetDays">0</div>
+                    <div class="stat-label">Days On Target</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="loggedDays">0</div>
+                    <div class="stat-label">Days Logged</div>
+                </div>
+            </div>
+
+            <div class="chart-container" style="margin-top: 30px;">
+                <div class="pie-chart" id="pieChart">
+                    <div class="pie-center">
+                        <span class="pie-percentage" id="piePercent">0%</span>
+                        <span class="pie-label">On Target</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📅 Diet History</h2>
+            <div id="dietHistory"></div>
+        </div>
+    </div>
+
+    <!-- Food Modal -->
+    <div class="modal-overlay" id="foodModal">
+        <div class="modal">
+            <h2 id="foodModalTitle">Add Food</h2>
+            <div class="form-group">
+                <label for="foodName">Food Name</label>
+                <input type="text" id="foodName" placeholder="e.g., Chicken breast">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="foodCalories">Calories</label>
+                    <input type="number" id="foodCalories" placeholder="0" min="0">
+                </div>
+                <div class="form-group">
+                    <label for="foodProtein">Protein (g)</label>
+                    <input type="number" id="foodProtein" placeholder="0" min="0" step="0.1">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="foodCarbs">Carbs (g)</label>
+                    <input type="number" id="foodCarbs" placeholder="0" min="0" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label for="foodFat">Fat (g)</label>
+                    <input type="number" id="foodFat" placeholder="0" min="0" step="0.1">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="foodMeal">Meal</label>
+                <select id="foodMeal">
+                    <option value="breakfast">🌅 Breakfast</option>
+                    <option value="lunch">☀️ Lunch</option>
+                    <option value="dinner">🌙 Dinner</option>
+                    <option value="snack">🍿 Snack</option>
+                </select>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-delete" id="deleteFoodBtn" onclick="deleteFood()" style="display: none;">Delete</button>
+                <button class="btn-cancel" onclick="closeFoodModal()">Cancel</button>
+                <button class="btn-save" onclick="saveFood()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Target Modal -->
+    <div class="modal-overlay" id="targetModal">
+        <div class="modal">
+            <h2>Edit Daily Targets</h2>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="targetCalories">Calories</label>
+                    <input type="number" id="targetCalories" placeholder="2000" min="0">
+                </div>
+                <div class="form-group">
+                    <label for="targetProtein">Protein (g)</label>
+                    <input type="number" id="targetProtein" placeholder="150" min="0">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="targetCarbs">Carbs (g)</label>
+                    <input type="number" id="targetCarbs" placeholder="250" min="0">
+                </div>
+                <div class="form-group">
+                    <label for="targetFat">Fat (g)</label>
+                    <input type="number" id="targetFat" placeholder="65" min="0">
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeTargetModal()">Cancel</button>
+                <button class="btn-save" onclick="saveTargets()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="shared.js"></script>
+    <script>
+        let dietData = JSON.parse(localStorage.getItem('dietData')) || {};
+        let dietTargets = JSON.parse(localStorage.getItem('dietTargets')) || {
+            calories: 2000,
+            protein: 150,
+            carbs: 250,
+            fat: 65
+        };
+        let selectedDate = new Date();
+        let historyMonth = new Date();
+        let editingFoodIndex = null;
+
+        function init() {
+            renderDate();
+            renderFoodLog();
+            renderTargets();
+            renderHistory();
+            updateStats();
+        }
+
+        function changeDate(delta) {
+            selectedDate.setDate(selectedDate.getDate() + delta);
+            renderDate();
+            renderFoodLog();
+        }
+
+        function renderDate() {
+            document.getElementById('currentDate').textContent = formatDisplayDate(selectedDate);
+        }
+
+        function getDayData(dateKey) {
+            return dietData[dateKey] || { foods: [] };
+        }
+
+        function calculateDayTotals(dateKey) {
+            const dayData = getDayData(dateKey);
+            return dayData.foods.reduce((totals, food) => {
+                totals.calories += food.calories || 0;
+                totals.protein += food.protein || 0;
+                totals.carbs += food.carbs || 0;
+                totals.fat += food.fat || 0;
+                return totals;
+            }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
+        }
+
+        function renderFoodLog() {
+            const dateKey = formatDate(selectedDate);
+            const dayData = getDayData(dateKey);
+            const totals = calculateDayTotals(dateKey);
+            const container = document.getElementById('foodLog');
+
+            document.getElementById('todayCalories').textContent = totals.calories;
+            document.getElementById('todayProtein').textContent = `${totals.protein.toFixed(1)}g`;
+            document.getElementById('todayCarbs').textContent = `${totals.carbs.toFixed(1)}g`;
+            document.getElementById('todayFat').textContent = `${totals.fat.toFixed(1)}g`;
+
+            const caloriePercent = Math.min((totals.calories / dietTargets.calories) * 100, 150);
+            document.getElementById('calorieProgress').textContent = `${totals.calories} / ${dietTargets.calories} kcal`;
+            document.getElementById('calorieProgressFill').style.width = `${Math.min(caloriePercent, 100)}%`;
+            
+            if (totals.calories > dietTargets.calories * 1.1) {
+                document.getElementById('calorieProgressFill').style.background = 'linear-gradient(90deg, #ff6b6b, #ff4757)';
+            } else {
+                document.getElementById('calorieProgressFill').style.background = 'linear-gradient(90deg, #00d9ff, #00ff88)';
+            }
+
+            if (dayData.foods.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🍽️</div>
+                        <p>No food logged for this day</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const mealGroups = {
+                breakfast: { icon: '🌅', name: 'Breakfast', foods: [] },
+                lunch: { icon: '☀️', name: 'Lunch', foods: [] },
+                dinner: { icon: '🌙', name: 'Dinner', foods: [] },
+                snack: { icon: '🍿', name: 'Snacks', foods: [] }
+            };
+
+            dayData.foods.forEach((food, index) => {
+                food._index = index;
+                mealGroups[food.meal || 'snack'].foods.push(food);
+            });
+
+            let html = '';
+            Object.entries(mealGroups).forEach(([key, group]) => {
+                if (group.foods.length > 0) {
+                    const mealTotals = group.foods.reduce((t, f) => {
+                        t.calories += f.calories || 0;
+                        t.protein += f.protein || 0;
+                        return t;
+                    }, { calories: 0, protein: 0 });
+
+                    html += `
+                        <div class="data-card">
+                            <div class="data-card-header">
+                                <div class="data-card-title">${group.icon} ${group.name}</div>
+                                <div style="font-size: 0.9rem; color: rgba(255,255,255,0.7);">
+                                    ${mealTotals.calories} kcal • ${mealTotals.protein.toFixed(1)}g protein
+                                </div>
+                            </div>
+                            <div class="food-items-list">
+                                ${group.foods.map(food => `
+                                    <div class="food-item">
+                                        <div>
+                                            <div class="food-item-name">${food.name}</div>
+                                            <div class="food-item-macros">
+                                                <span>${food.calories} kcal</span>
+                                                <span>P: ${food.protein}g</span>
+                                                <span>C: ${food.carbs}g</span>
+                                                <span>F: ${food.fat}g</span>
+                                            </div>
+                                        </div>
+                                        <div class="data-card-actions">
+                                            <button onclick="openFoodModal(${food._index})">Edit</button>
+                                            <button class="delete" onclick="deleteFood(${food._index})">×</button>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+
+            container.innerHTML = html;
+        }
+
+        function renderTargets() {
+            document.getElementById('targetCalDisplay').textContent = dietTargets.calories;
+            document.getElementById('targetProtDisplay').textContent = `${dietTargets.protein}g`;
+            document.getElementById('targetCarbsDisplay').textContent = `${dietTargets.carbs}g`;
+            document.getElementById('targetFatDisplay').textContent = `${dietTargets.fat}g`;
+        }
+
+        function openFoodModal(index = null) {
+            editingFoodIndex = index;
+            const modal = document.getElementById('foodModal');
+            const title = document.getElementById('foodModalTitle');
+            const deleteBtn = document.getElementById('deleteFoodBtn');
+            
+            if (index !== null) {
+                const dateKey = formatDate(selectedDate);
+                const food = getDayData(dateKey).foods[index];
+                document.getElementById('foodName').value = food.name;
+                document.getElementById('foodCalories').value = food.calories;
+                document.getElementById('foodProtein').value = food.protein;
+                document.getElementById('foodCarbs').value = food.carbs;
+                document.getElementById('foodFat').value = food.fat;
+                document.getElementById('foodMeal').value = food.meal || 'snack';
+                title.textContent = 'Edit Food';
+                deleteBtn.style.display = 'block';
+            } else {
+                document.getElementById('foodName').value = '';
+                document.getElementById('foodCalories').value = '';
+                document.getElementById('foodProtein').value = '';
+                document.getElementById('foodCarbs').value = '';
+                document.getElementById('foodFat').value = '';
+                document.getElementById('foodMeal').value = 'lunch';
+                title.textContent = 'Add Food';
+                deleteBtn.style.display = 'none';
+            }
+            
+            modal.classList.add('active');
+        }
+
+        function closeFoodModal() {
+            document.getElementById('foodModal').classList.remove('active');
+            editingFoodIndex = null;
+        }
+
+        function saveFood() {
+            const name = document.getElementById('foodName').value.trim();
+            const calories = parseInt(document.getElementById('foodCalories').value) || 0;
+            const protein = parseFloat(document.getElementById('foodProtein').value) || 0;
+            const carbs = parseFloat(document.getElementById('foodCarbs').value) || 0;
+            const fat = parseFloat(document.getElementById('foodFat').value) || 0;
+            const meal = document.getElementById('foodMeal').value;
+
+            if (!name) {
+                alert('Please enter a food name');
+                return;
+            }
+
+            const dateKey = formatDate(selectedDate);
+            if (!dietData[dateKey]) {
+                dietData[dateKey] = { foods: [] };
+            }
+
+            const food = { name, calories, protein, carbs, fat, meal };
+
+            if (editingFoodIndex !== null) {
+                dietData[dateKey].foods[editingFoodIndex] = food;
+            } else {
+                dietData[dateKey].foods.push(food);
+            }
+
+            localStorage.setItem('dietData', JSON.stringify(dietData));
+            closeFoodModal();
+            renderFoodLog();
+            renderHistory();
+            updateStats();
+        }
+
+        function deleteFood(index = null) {
+            const idx = index !== null ? index : editingFoodIndex;
+            if (idx === null) return;
+            
+            if (confirm('Delete this food entry?')) {
+                const dateKey = formatDate(selectedDate);
+                dietData[dateKey].foods.splice(idx, 1);
+                localStorage.setItem('dietData', JSON.stringify(dietData));
+                closeFoodModal();
+                renderFoodLog();
+                renderHistory();
+                updateStats();
+            }
+        }
+
+        function openTargetModal() {
+            document.getElementById('targetCalories').value = dietTargets.calories;
+            document.getElementById('targetProtein').value = dietTargets.protein;
+            document.getElementById('targetCarbs').value = dietTargets.carbs;
+            document.getElementById('targetFat').value = dietTargets.fat;
+            document.getElementById('targetModal').classList.add('active');
+        }
+
+        function closeTargetModal() {
+            document.getElementById('targetModal').classList.remove('active');
+        }
+
+        function saveTargets() {
+            dietTargets = {
+                calories: parseInt(document.getElementById('targetCalories').value) || 2000,
+                protein: parseInt(document.getElementById('targetProtein').value) || 150,
+                carbs: parseInt(document.getElementById('targetCarbs').value) || 250,
+                fat: parseInt(document.getElementById('targetFat').value) || 65
+            };
+            localStorage.setItem('dietTargets', JSON.stringify(dietTargets));
+            closeTargetModal();
+            renderTargets();
+            renderFoodLog();
+            updateStats();
+        }
+
+        function changeMonth(delta) {
+            historyMonth.setMonth(historyMonth.getMonth() + delta);
+            renderHistory();
+            updateStats();
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('dietHistory');
+            const monthLabel = document.getElementById('historyMonth');
+            
+            const year = historyMonth.getFullYear();
+            const month = historyMonth.getMonth();
+            
+            monthLabel.textContent = historyMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            
+            const lastDay = new Date(year, month + 1, 0).getDate();
+            let html = '';
+            let hasEntries = false;
+
+            for (let day = lastDay; day >= 1; day--) {
+                const date = new Date(year, month, day);
+                const dateKey = formatDate(date);
+                const dayData = getDayData(dateKey);
+
+                if (dayData.foods.length > 0) {
+                    hasEntries = true;
+                    const totals = calculateDayTotals(dateKey);
+                    const onTarget = totals.calories >= dietTargets.calories * 0.9 && totals.calories <= dietTargets.calories * 1.1;
+
+                    html += `
+                        <div class="data-card">
+                            <div class="data-card-header">
+                                <div class="data-card-title">${formatShortDate(date)}</div>
+                                <span class="status-badge ${onTarget ? 'good' : totals.calories < dietTargets.calories * 0.9 ? 'warning' : 'bad'}">
+                                    ${onTarget ? '✓ On target' : totals.calories < dietTargets.calories * 0.9 ? 'Under' : 'Over'}
+                                </span>
+                            </div>
+                            <div class="data-grid">
+                                <div class="data-item">
+                                    <div class="data-item-value">${totals.calories}</div>
+                                    <div class="data-item-label">Calories</div>
+                                </div>
+                                <div class="data-item">
+                                    <div class="data-item-value">${totals.protein.toFixed(0)}g</div>
+                                    <div class="data-item-label">Protein</div>
+                                </div>
+                                <div class="data-item">
+                                    <div class="data-item-value">${totals.carbs.toFixed(0)}g</div>
+                                    <div class="data-item-label">Carbs</div>
+                                </div>
+                                <div class="data-item">
+                                    <div class="data-item-value">${totals.fat.toFixed(0)}g</div>
+                                    <div class="data-item-label">Fat</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            if (!hasEntries) {
+                html = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <p>No diet entries for this month</p>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+        }
+
+        function updateStats() {
+            const year = historyMonth.getFullYear();
+            const month = historyMonth.getMonth();
+            const today = new Date();
+            
+            const lastDay = new Date(year, month + 1, 0).getDate();
+            const isCurrentMonth = year === today.getFullYear() && month === today.getMonth();
+            const countUntilDay = isCurrentMonth ? today.getDate() : lastDay;
+
+            let totalCalories = 0;
+            let totalProtein = 0;
+            let targetDays = 0;
+            let loggedDays = 0;
+
+            for (let day = 1; day <= countUntilDay; day++) {
+                const date = new Date(year, month, day);
+                const dateKey = formatDate(date);
+                const dayData = getDayData(dateKey);
+
+                if (dayData.foods.length > 0) {
+                    loggedDays++;
+                    const totals = calculateDayTotals(dateKey);
+                    totalCalories += totals.calories;
+                    totalProtein += totals.protein;
+
+                    if (totals.calories >= dietTargets.calories * 0.9 && totals.calories <= dietTargets.calories * 1.1) {
+                        targetDays++;
+                    }
+                }
+            }
+
+            if (loggedDays > 0) {
+                document.getElementById('avgCalories').textContent = Math.round(totalCalories / loggedDays);
+                document.getElementById('avgProtein').textContent = `${Math.round(totalProtein / loggedDays)}g`;
+            } else {
+                document.getElementById('avgCalories').textContent = '0';
+                document.getElementById('avgProtein').textContent = '0g';
+            }
+            
+            document.getElementById('targetDays').textContent = targetDays;
+            document.getElementById('loggedDays').textContent = loggedDays;
+
+            const percent = loggedDays > 0 ? Math.round((targetDays / loggedDays) * 100) : 0;
+            document.getElementById('piePercent').textContent = `${percent}%`;
+            const pieChart = document.getElementById('pieChart');
+            const completedDeg = (percent / 100) * 360;
+            pieChart.style.background = `conic-gradient(
+                #00d9ff 0deg,
+                #00ff88 ${completedDeg}deg,
+                rgba(255,255,255,0.1) ${completedDeg}deg
+            )`;
+        }
+
+        document.getElementById('foodModal').addEventListener('click', function(e) {
+            if (e.target === this) closeFoodModal();
+        });
+        document.getElementById('targetModal').addEventListener('click', function(e) {
+            if (e.target === this) closeTargetModal();
+        });
+
+        init();
+    </script>
+</body>
+</html>
