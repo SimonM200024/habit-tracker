@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Life Tracker - Products Database</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="products.css">
+</head>
+<body>
+    <nav class="main-nav">
+        <div class="nav-brand">🎯 Life Tracker</div>
+        <div class="nav-links">
+            <a href="dashboard.html">Dashboard</a>
+            <a href="index.html">Habits</a>
+            <a href="sleep.html">Sleep</a>
+            <a href="diet.html">Diet</a>
+            <a href="work.html">Work</a>
+            <a href="mood.html">Mood</a>
+            <a href="hydration.html">Water</a>
+            <a href="products.html" class="active">Products</a>
+            <button id="themeToggle" onclick="toggleTheme()">☀️</button>
+        </div>
+    </nav>
+
+    <div class="container products-container">
+        <h1>🛒 Scraped Products</h1>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-card">
+                <div class="stat-value" id="totalProducts">--</div>
+                <div class="stat-label">Total Products</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalColumns">--</div>
+                <div class="stat-label">Data Fields</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="currentPage">--</div>
+                <div class="stat-label">Current Page</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalPages">--</div>
+                <div class="stat-label">Total Pages</div>
+            </div>
+        </div>
+
+        <!-- Search & Controls -->
+        <div class="section">
+            <div class="products-controls">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Search products..."
+                           onkeydown="if(event.key==='Enter') searchProducts()">
+                    <button class="add-btn search-btn" onclick="searchProducts()">Search</button>
+                    <button class="btn-cancel clear-btn" onclick="clearSearch()">Clear</button>
+                </div>
+                <div class="view-controls">
+                    <label for="perPage">Per page:</label>
+                    <select id="perPage" onchange="changePerPage()">
+                        <option value="10">10</option>
+                        <option value="25" selected>25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                    <button class="view-toggle" onclick="toggleView('table')" id="tableViewBtn" title="Table View">☰</button>
+                    <button class="view-toggle" onclick="toggleView('card')" id="cardViewBtn" title="Card View">▦</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div class="loading-indicator" id="loadingIndicator">
+            <div class="spinner"></div>
+            <p>Loading products from BigQuery...</p>
+        </div>
+
+        <!-- Error Message -->
+        <div class="error-message" id="errorMessage" style="display:none;">
+            <div class="empty-state-icon">⚠️</div>
+            <h3>Connection Error</h3>
+            <p id="errorText"></p>
+            <button class="add-btn" onclick="loadProducts()" style="margin-top:15px;">Retry</button>
+        </div>
+
+        <!-- Table View -->
+        <div class="section table-section" id="tableView" style="display:none;">
+            <div class="table-wrapper">
+                <table class="products-table" id="productsTable">
+                    <thead id="tableHead"></thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Card View -->
+        <div id="cardView" style="display:none;">
+            <div class="products-card-grid" id="cardGrid"></div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination" id="pagination" style="display:none;">
+            <button class="page-btn" onclick="goToPage(1)" id="firstPageBtn">First</button>
+            <button class="page-btn" onclick="goToPage(currentState.page - 1)" id="prevPageBtn">← Prev</button>
+            <div class="page-numbers" id="pageNumbers"></div>
+            <button class="page-btn" onclick="goToPage(currentState.page + 1)" id="nextPageBtn">Next →</button>
+            <button class="page-btn" onclick="goToPage(currentState.totalPages)" id="lastPageBtn">Last</button>
+        </div>
+
+        <!-- Numeric Stats -->
+        <div class="section" id="numericStatsSection" style="display:none;">
+            <h2>📈 Numeric Field Stats</h2>
+            <div class="stats-detail-grid" id="numericStatsGrid"></div>
+        </div>
+    </div>
+
+    <!-- Product Detail Modal -->
+    <div class="modal-overlay" id="productModal">
+        <div class="modal" style="max-width:700px;">
+            <h2 id="modalTitle">Product Details</h2>
+            <div id="modalBody"></div>
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="shared.js"></script>
+    <script>
+    // State
+    const currentState = {
+        page: 1,
+        limit: 25,
+        search: '',
+        sortBy: '',
+        sortOrder: 'ASC',
+        view: 'table',
+        columns: [],
+        columnTypes: {},
+        totalPages: 1,
+    };
+
+    // Init
+    document.addEventListener('DOMContentLoaded', () => {
+        loadProducts();
+        loadStats();
+    });
+
+    async function loadProducts() {
+        showLoading(true);
+        hideError();
+
+        const params = new URLSearchParams({
+            page: currentState.page,
+            limit: currentState.limit,
+        });
+        if (currentState.search) params.set('search', currentState.search);
+        if (currentState.sortBy) {
+            params.set('sortBy', currentState.sortBy);
+            params.set('sortOrder', currentState.sortOrder);
+        }
+
+        try {
+            const response = await fetch(`/api/products?${params}`);
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.message || 'Failed to fetch products');
+            }
+            const result = await response.json();
+
+            currentState.columns = result.columns;
+            currentState.columnTypes = result.columnTypes;
+            currentState.totalPages = result.pagination.totalPages;
+
+            updateStats(result.pagination);
+            renderTable(result.data, result.columns);
+            renderCards(result.data, result.columns);
+            renderPagination(result.pagination);
+
+            showLoading(false);
+            document.getElementById(currentState.view === 'table' ? 'tableView' : 'cardView').style.display = '';
+            document.getElementById('pagination').style.display = '';
+        } catch (error) {
+            showLoading(false);
+            showError(error.message);
+        }
+    }
+
+    async function loadStats() {
+        try {
+            const response = await fetch('/api/products/stats');
+            if (!response.ok) return;
+            const stats = await response.json();
+
+            document.getElementById('totalProducts').textContent = stats.total.toLocaleString();
+            document.getElementById('totalColumns').textContent = stats.columns;
+
+            if (stats.numericStats && Object.keys(stats.numericStats).length > 0) {
+                const section = document.getElementById('numericStatsSection');
+                const grid = document.getElementById('numericStatsGrid');
+                section.style.display = '';
+
+                grid.innerHTML = Object.entries(stats.numericStats).map(([name, s]) => `
+                    <div class="stat-detail-card">
+                        <h4>${name}</h4>
+                        <div class="stat-detail-row">
+                            <span class="stat-detail-label">Min</span>
+                            <span class="stat-detail-value">${s.min != null ? Number(s.min).toLocaleString() : 'N/A'}</span>
+                        </div>
+                        <div class="stat-detail-row">
+                            <span class="stat-detail-label">Max</span>
+                            <span class="stat-detail-value">${s.max != null ? Number(s.max).toLocaleString() : 'N/A'}</span>
+                        </div>
+                        <div class="stat-detail-row">
+                            <span class="stat-detail-label">Avg</span>
+                            <span class="stat-detail-value">${s.avg != null ? Number(s.avg).toLocaleString() : 'N/A'}</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        } catch (e) {
+            // Stats are non-critical
+        }
+    }
+
+    function renderTable(data, columns) {
+        const thead = document.getElementById('tableHead');
+        const tbody = document.getElementById('tableBody');
+
+        thead.innerHTML = '<tr>' + columns.map(col => {
+            const isActive = currentState.sortBy === col;
+            const arrow = isActive ? (currentState.sortOrder === 'ASC' ? ' ↑' : ' ↓') : '';
+            return `<th class="sortable ${isActive ? 'active' : ''}" onclick="sortByColumn('${col}')">${col}${arrow}</th>`;
+        }).join('') + '</tr>';
+
+        if (data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="${columns.length}" class="empty-cell">No products found</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = data.map((row, idx) =>
+            `<tr onclick="showProductDetail(${idx})" class="clickable-row">` +
+            columns.map(col => {
+                const val = row[col];
+                const display = formatCellValue(val, col);
+                return `<td title="${escapeHtml(String(val ?? ''))}">${display}</td>`;
+            }).join('') +
+            '</tr>'
+        ).join('');
+
+        // Store data for detail view
+        window._currentData = data;
+    }
+
+    function renderCards(data, columns) {
+        const grid = document.getElementById('cardGrid');
+
+        if (data.length === 0) {
+            grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📦</div><p>No products found</p></div>';
+            return;
+        }
+
+        // Show first 4 columns as key fields
+        const keyCols = columns.slice(0, 4);
+        const extraCols = columns.slice(4, 8);
+
+        grid.innerHTML = data.map((row, idx) => `
+            <div class="product-card data-card" onclick="showProductDetail(${idx})">
+                <div class="product-card-header">
+                    <span class="product-card-title">${escapeHtml(String(row[keyCols[0]] ?? 'Product'))}</span>
+                </div>
+                ${keyCols.slice(1).map(col => `
+                    <div class="product-card-field">
+                        <span class="product-card-label">${col}</span>
+                        <span class="product-card-value">${formatCellValue(row[col], col)}</span>
+                    </div>
+                `).join('')}
+                ${extraCols.length > 0 ? '<div class="product-card-extra">' +
+                    extraCols.map(col => `
+                        <div class="product-card-field">
+                            <span class="product-card-label">${col}</span>
+                            <span class="product-card-value">${formatCellValue(row[col], col)}</span>
+                        </div>
+                    `).join('') + '</div>' : ''}
+            </div>
+        `).join('');
+
+        window._currentData = data;
+    }
+
+    function renderPagination(pagination) {
+        const { page, totalPages } = pagination;
+        currentState.page = page;
+        currentState.totalPages = totalPages;
+
+        document.getElementById('currentPage').textContent = page;
+        document.getElementById('totalPages').textContent = totalPages;
+
+        document.getElementById('firstPageBtn').disabled = page <= 1;
+        document.getElementById('prevPageBtn').disabled = page <= 1;
+        document.getElementById('nextPageBtn').disabled = page >= totalPages;
+        document.getElementById('lastPageBtn').disabled = page >= totalPages;
+
+        // Page numbers
+        const container = document.getElementById('pageNumbers');
+        const range = 2;
+        let start = Math.max(1, page - range);
+        let end = Math.min(totalPages, page + range);
+
+        let html = '';
+        if (start > 1) html += '<span class="page-dots">...</span>';
+        for (let i = start; i <= end; i++) {
+            html += `<button class="page-num ${i === page ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+        }
+        if (end < totalPages) html += '<span class="page-dots">...</span>';
+        container.innerHTML = html;
+    }
+
+    function formatCellValue(val, col) {
+        if (val === null || val === undefined) return '<span class="null-value">null</span>';
+        if (typeof val === 'object') return escapeHtml(JSON.stringify(val));
+
+        const str = String(val);
+        // Truncate long strings
+        if (str.length > 80) return escapeHtml(str.substring(0, 80)) + '...';
+
+        // Format numbers with type info
+        const type = currentState.columnTypes[col];
+        if (['FLOAT', 'FLOAT64', 'NUMERIC', 'BIGNUMERIC'].includes(type)) {
+            const num = parseFloat(val);
+            if (!isNaN(num)) return num.toLocaleString(undefined, { maximumFractionDigits: 2 });
+        }
+        if (['INTEGER', 'INT64'].includes(type)) {
+            const num = parseInt(val);
+            if (!isNaN(num)) return num.toLocaleString();
+        }
+
+        return escapeHtml(str);
+    }
+
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    // Actions
+    function searchProducts() {
+        currentState.search = document.getElementById('searchInput').value.trim();
+        currentState.page = 1;
+        loadProducts();
+    }
+
+    function clearSearch() {
+        document.getElementById('searchInput').value = '';
+        currentState.search = '';
+        currentState.page = 1;
+        loadProducts();
+    }
+
+    function sortByColumn(col) {
+        if (currentState.sortBy === col) {
+            currentState.sortOrder = currentState.sortOrder === 'ASC' ? 'DESC' : 'ASC';
+        } else {
+            currentState.sortBy = col;
+            currentState.sortOrder = 'ASC';
+        }
+        loadProducts();
+    }
+
+    function goToPage(page) {
+        if (page < 1 || page > currentState.totalPages) return;
+        currentState.page = page;
+        loadProducts();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function changePerPage() {
+        currentState.limit = parseInt(document.getElementById('perPage').value);
+        currentState.page = 1;
+        loadProducts();
+    }
+
+    function toggleView(view) {
+        currentState.view = view;
+        document.getElementById('tableView').style.display = view === 'table' ? '' : 'none';
+        document.getElementById('cardView').style.display = view === 'card' ? '' : 'none';
+        document.getElementById('tableViewBtn').classList.toggle('active', view === 'table');
+        document.getElementById('cardViewBtn').classList.toggle('active', view === 'card');
+    }
+
+    function showProductDetail(idx) {
+        const product = window._currentData[idx];
+        if (!product) return;
+
+        const columns = currentState.columns;
+        document.getElementById('modalTitle').textContent = String(product[columns[0]] || 'Product Details');
+
+        const body = document.getElementById('modalBody');
+        body.innerHTML = columns.map(col => `
+            <div class="detail-row">
+                <span class="detail-label">${col}</span>
+                <span class="detail-value">${formatDetailValue(product[col])}</span>
+            </div>
+        `).join('');
+
+        document.getElementById('productModal').classList.add('active');
+    }
+
+    function formatDetailValue(val) {
+        if (val === null || val === undefined) return '<span class="null-value">null</span>';
+        if (typeof val === 'object') return '<pre>' + escapeHtml(JSON.stringify(val, null, 2)) + '</pre>';
+        const str = String(val);
+        // Detect URLs
+        if (/^https?:\/\//i.test(str)) return `<a href="${escapeHtml(str)}" target="_blank" rel="noopener">${escapeHtml(str)}</a>`;
+        return escapeHtml(str);
+    }
+
+    function closeModal() {
+        document.getElementById('productModal').classList.remove('active');
+    }
+
+    // UI helpers
+    function updateStats(pagination) {
+        document.getElementById('totalProducts').textContent = pagination.total.toLocaleString();
+        document.getElementById('currentPage').textContent = pagination.page;
+        document.getElementById('totalPages').textContent = pagination.totalPages;
+    }
+
+    function showLoading(show) {
+        document.getElementById('loadingIndicator').style.display = show ? '' : 'none';
+    }
+
+    function showError(message) {
+        document.getElementById('errorMessage').style.display = '';
+        document.getElementById('errorText').textContent = message;
+        document.getElementById('tableView').style.display = 'none';
+        document.getElementById('cardView').style.display = 'none';
+        document.getElementById('pagination').style.display = 'none';
+    }
+
+    function hideError() {
+        document.getElementById('errorMessage').style.display = 'none';
+    }
+
+    // Keyboard shortcut: Escape closes modal
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') closeModal();
+    });
+    </script>
+</body>
+</html>
