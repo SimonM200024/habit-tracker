@@ -6,11 +6,12 @@ diesel, and extra-light heating oil (ELKO) from 2007 onward.
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import sys
 import urllib.request
 from dataclasses import asdict, dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from html.parser import HTMLParser
 from typing import Iterable
 
@@ -146,6 +147,115 @@ def _iso(s: str) -> date:
     return date.fromisoformat(s)
 
 
+_HTML_TEMPLATE = """<!doctype html>
+<html lang="sl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Regulirane cene naftnih derivatov</title>
+<style>
+  :root {{ color-scheme: light dark; }}
+  body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          margin: 0; padding: 1.5rem; max-width: 960px; margin-inline: auto;
+          background: #fafafa; color: #111; }}
+  h1 {{ margin: 0 0 .25rem; font-size: 1.4rem; }}
+  p.meta {{ color: #666; margin: 0 0 1.25rem; font-size: .9rem; }}
+  p.meta a {{ color: inherit; }}
+  .controls {{ display: flex; flex-wrap: wrap; gap: .75rem; align-items: end;
+               background: #fff; padding: .9rem 1rem; border-radius: 8px;
+               box-shadow: 0 1px 3px rgba(0,0,0,.06); margin-bottom: 1rem; }}
+  .controls label {{ display: flex; flex-direction: column; font-size: .8rem;
+                     color: #444; gap: .25rem; }}
+  .controls input, .controls button {{ font: inherit; padding: .4rem .6rem;
+                                       border: 1px solid #ccc; border-radius: 6px;
+                                       background: #fff; }}
+  .controls button {{ cursor: pointer; }}
+  .controls button:hover {{ background: #f0f0f0; }}
+  #count {{ margin-left: auto; color: #666; font-size: .85rem; }}
+  table {{ width: 100%; border-collapse: collapse; background: #fff;
+           box-shadow: 0 1px 3px rgba(0,0,0,.06); border-radius: 8px; overflow: hidden; }}
+  th, td {{ padding: .55rem .75rem; text-align: right; border-bottom: 1px solid #eee;
+            font-variant-numeric: tabular-nums; }}
+  th:first-child, td:first-child {{ text-align: left; }}
+  th {{ background: #f4f4f4; font-weight: 600; font-size: .85rem; }}
+  tr:last-child td {{ border-bottom: 0; }}
+  tr:hover td {{ background: #fafafa; }}
+  td.na {{ color: #999; }}
+  @media (prefers-color-scheme: dark) {{
+    body {{ background: #111; color: #eee; }}
+    .controls, table {{ background: #1c1c1c; box-shadow: none; }}
+    .controls input, .controls button {{ background: #222; color: #eee; border-color: #333; }}
+    th {{ background: #222; }}
+    th, td {{ border-color: #2a2a2a; }}
+    tr:hover td {{ background: #1f1f1f; }}
+    p.meta, #count {{ color: #999; }}
+  }}
+</style>
+</head>
+<body>
+<h1>Regulirane cene naftnih derivatov</h1>
+<p class="meta">Vir: <a href="{source_url}" target="_blank" rel="noopener">energetika-portal.si</a>
+&middot; osveženo {generated_at}</p>
+
+<div class="controls">
+  <label>Od <input type="date" id="from" min="{min_date}" max="{max_date}"></label>
+  <label>Do <input type="date" id="to" min="{min_date}" max="{max_date}"></label>
+  <button id="reset" type="button">Ponastavi</button>
+  <span id="count"></span>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Datum</th>
+      <th>NMB-95 (EUR/L)</th>
+      <th>Dizel (EUR/L)</th>
+      <th>ELKO (EUR/L)</th>
+    </tr>
+  </thead>
+  <tbody id="rows"></tbody>
+</table>
+
+<script id="data" type="application/json">{data_json}</script>
+<script>
+  const data = JSON.parse(document.getElementById('data').textContent);
+  const tbody = document.getElementById('rows');
+  const fromInput = document.getElementById('from');
+  const toInput = document.getElementById('to');
+  const countEl = document.getElementById('count');
+  const fmt = v => v == null ? '<td class="na">&mdash;</td>' : `<td>${{v.toFixed(3)}}</td>`;
+  function render() {{
+    const f = fromInput.value, t = toInput.value;
+    const rows = data.filter(r => (!f || r.date >= f) && (!t || r.date <= t));
+    tbody.innerHTML = rows.map(r =>
+      `<tr><td>${{r.date}}</td>${{fmt(r.nmb95)}}${{fmt(r.diesel)}}${{fmt(r.elko)}}</tr>`
+    ).join('');
+    countEl.textContent = `${{rows.length}} / ${{data.length}} zapisov`;
+  }}
+  fromInput.addEventListener('input', render);
+  toInput.addEventListener('input', render);
+  document.getElementById('reset').addEventListener('click', () => {{
+    fromInput.value = ''; toInput.value = ''; render();
+  }});
+  render();
+</script>
+</body>
+</html>
+"""
+
+
+def render_html(rows: list[PriceRow], source_url: str = URL) -> str:
+    payload = [asdict(r) for r in rows]
+    dates = [r.date for r in rows]
+    return _HTML_TEMPLATE.format(
+        source_url=html.escape(source_url),
+        generated_at=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
+        min_date=min(dates) if dates else "",
+        max_date=max(dates) if dates else "",
+        data_json=json.dumps(payload, ensure_ascii=False).replace("</", "<\\/"),
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--date", type=_iso, help="Exact effective date (YYYY-MM-DD)")
@@ -153,9 +263,21 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--to", dest="end", type=_iso, help="Range end (inclusive)")
     ap.add_argument("--json", action="store_true", help="Output JSON instead of a table")
     ap.add_argument("--limit", type=int, help="Show at most N rows (after filtering)")
+    ap.add_argument(
+        "--build-html",
+        metavar="PATH",
+        help="Write a self-contained HTML report to PATH (uses unfiltered dataset)",
+    )
     args = ap.parse_args(argv)
 
     rows = fetch_prices()
+
+    if args.build_html:
+        with open(args.build_html, "w", encoding="utf-8") as f:
+            f.write(render_html(rows))
+        print(f"Wrote {args.build_html} ({len(rows)} rows)")
+        return 0
+
     rows = filter_by_date(rows, on=args.date, start=args.start, end=args.end)
     if args.limit is not None:
         rows = rows[: args.limit]
