@@ -181,6 +181,8 @@ _HTML_TEMPLATE = """<!doctype html>
   tr:last-child td {{ border-bottom: 0; }}
   tr:hover td {{ background: #fafafa; }}
   td.na {{ color: #999; }}
+  td.up {{ color: #c62828; }}
+  td.down {{ color: #2e7d32; }}
   @media (prefers-color-scheme: dark) {{
     body {{ background: #111; color: #eee; }}
     .controls, table {{ background: #1c1c1c; box-shadow: none; }}
@@ -189,6 +191,8 @@ _HTML_TEMPLATE = """<!doctype html>
     th, td {{ border-color: #2a2a2a; }}
     tr:hover td {{ background: #1f1f1f; }}
     p.meta, #count {{ color: #999; }}
+    td.up {{ color: #ef5350; }}
+    td.down {{ color: #66bb6a; }}
   }}
 </style>
 </head>
@@ -209,6 +213,7 @@ _HTML_TEMPLATE = """<!doctype html>
     <tr>
       <th>Datum</th>
       <th>NMB-95 (EUR/L)</th>
+      <th>NMB-95 &Delta;%</th>
       <th>Dizel (EUR/L)</th>
       <th>ELKO (EUR/L)</th>
     </tr>
@@ -219,16 +224,27 @@ _HTML_TEMPLATE = """<!doctype html>
 <script id="data" type="application/json">{data_json}</script>
 <script>
   const data = JSON.parse(document.getElementById('data').textContent);
+  for (let i = 0; i < data.length; i++) {{
+    const cur = data[i].nmb95, prev = i + 1 < data.length ? data[i + 1].nmb95 : null;
+    data[i].nmb95Change = (cur != null && prev != null && prev !== 0)
+      ? (cur - prev) / prev * 100 : null;
+  }}
   const tbody = document.getElementById('rows');
   const fromInput = document.getElementById('from');
   const toInput = document.getElementById('to');
   const countEl = document.getElementById('count');
   const fmt = v => v == null ? '<td class="na">&mdash;</td>' : `<td>${{v.toFixed(3)}}</td>`;
+  const fmtChange = v => {{
+    if (v == null) return '<td class="na">&mdash;</td>';
+    const cls = v > 0 ? 'up' : v < 0 ? 'down' : '';
+    const sign = v > 0 ? '+' : '';
+    return `<td class="${{cls}}">${{sign}}${{v.toFixed(2)}}%</td>`;
+  }};
   function render() {{
     const f = fromInput.value, t = toInput.value;
     const rows = data.filter(r => (!f || r.date >= f) && (!t || r.date <= t));
     tbody.innerHTML = rows.map(r =>
-      `<tr><td>${{r.date}}</td>${{fmt(r.nmb95)}}${{fmt(r.diesel)}}${{fmt(r.elko)}}</tr>`
+      `<tr><td>${{r.date}}</td>${{fmt(r.nmb95)}}${{fmtChange(r.nmb95Change)}}${{fmt(r.diesel)}}${{fmt(r.elko)}}</tr>`
     ).join('');
     countEl.textContent = `${{rows.length}} / ${{data.length}} zapisov`;
   }}
