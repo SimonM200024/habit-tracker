@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1a1a2e">
+    <title>Habit Hopper</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #1a1a2e;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: #fff;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            overscroll-behavior: none;
+        }
+        #game {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
+            touch-action: none;
+        }
+        .overlay {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: env(safe-area-inset-top) 24px env(safe-area-inset-bottom);
+            pointer-events: none;
+            text-align: center;
+        }
+        .overlay.active { pointer-events: auto; }
+        .panel {
+            background: rgba(20, 20, 40, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 24px;
+            padding: 32px 28px;
+            max-width: 340px;
+            width: 100%;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        }
+        h1 {
+            font-size: 36px;
+            font-weight: 800;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #ffd93d, #ff6b9d);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .tagline {
+            font-size: 15px;
+            opacity: 0.75;
+            margin-bottom: 24px;
+        }
+        .score-row {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            justify-content: center;
+        }
+        .score-box {
+            flex: 1;
+            background: rgba(255,255,255,0.06);
+            border-radius: 14px;
+            padding: 12px;
+        }
+        .score-box .label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.6;
+            margin-bottom: 4px;
+        }
+        .score-box .value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #ffd93d;
+        }
+        button {
+            font: inherit;
+            background: linear-gradient(135deg, #ff6b9d, #c44569);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            padding: 16px 24px;
+            font-size: 17px;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            box-shadow: 0 8px 24px rgba(255, 107, 157, 0.35);
+            transition: transform 0.1s ease;
+        }
+        button:active { transform: scale(0.97); }
+        .hint {
+            margin-top: 16px;
+            font-size: 13px;
+            opacity: 0.55;
+        }
+        #hud {
+            position: fixed;
+            top: env(safe-area-inset-top);
+            left: 0;
+            right: 0;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 700;
+            font-size: 18px;
+            pointer-events: none;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+            z-index: 5;
+        }
+        #hud.hidden { display: none; }
+        .back-link {
+            position: fixed;
+            top: env(safe-area-inset-top);
+            left: 0;
+            padding: 14px 18px;
+            color: #fff;
+            font-size: 15px;
+            text-decoration: none;
+            opacity: 0.7;
+            z-index: 6;
+        }
+        .live-score {
+            font-size: 56px;
+            font-weight: 800;
+            letter-spacing: -1px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="game"></canvas>
+
+    <a href="index.html" class="back-link" id="backLink">← Back</a>
+
+    <div id="hud" class="hidden">
+        <span id="liveScore" class="live-score">0</span>
+        <span id="liveBest">Best 0</span>
+    </div>
+
+    <div class="overlay active" id="startScreen">
+        <div class="panel">
+            <h1>🐤 Habit Hopper</h1>
+            <div class="tagline">Tap to flap. Dodge the pipes. Beat your best.</div>
+            <div class="score-row">
+                <div class="score-box">
+                    <div class="label">Best</div>
+                    <div class="value" id="bestStart">0</div>
+                </div>
+            </div>
+            <button id="playBtn">Play</button>
+            <div class="hint">Tap anywhere on the screen to jump</div>
+        </div>
+    </div>
+
+    <div class="overlay" id="gameOverScreen">
+        <div class="panel">
+            <h1 id="goTitle">Game Over</h1>
+            <div class="tagline" id="goSubtitle">Nice run!</div>
+            <div class="score-row">
+                <div class="score-box">
+                    <div class="label">Score</div>
+                    <div class="value" id="finalScore">0</div>
+                </div>
+                <div class="score-box">
+                    <div class="label">Best</div>
+                    <div class="value" id="finalBest">0</div>
+                </div>
+            </div>
+            <button id="retryBtn">Play Again</button>
+            <div class="hint">Tap to start, tap to flap</div>
+        </div>
+    </div>
+
+<script>
+(function () {
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const startScreen = document.getElementById('startScreen');
+    const gameOverScreen = document.getElementById('gameOverScreen');
+    const playBtn = document.getElementById('playBtn');
+    const retryBtn = document.getElementById('retryBtn');
+    const hud = document.getElementById('hud');
+    const liveScore = document.getElementById('liveScore');
+    const liveBest = document.getElementById('liveBest');
+    const bestStart = document.getElementById('bestStart');
+    const finalScore = document.getElementById('finalScore');
+    const finalBest = document.getElementById('finalBest');
+    const goTitle = document.getElementById('goTitle');
+    const goSubtitle = document.getElementById('goSubtitle');
+    const backLink = document.getElementById('backLink');
+
+    const STORAGE_KEY = 'habit_hopper_best';
+    let best = parseInt(localStorage.getItem(STORAGE_KEY) || '0', 10);
+    bestStart.textContent = best;
+    liveBest.textContent = 'Best ' + best;
+
+    let W = 0, H = 0, DPR = 1;
+    function resize() {
+        DPR = Math.min(window.devicePixelRatio || 1, 2);
+        W = window.innerWidth;
+        H = window.innerHeight;
+        canvas.width = Math.floor(W * DPR);
+        canvas.height = Math.floor(H * DPR);
+        canvas.style.width = W + 'px';
+        canvas.style.height = H + 'px';
+        ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    }
+    resize();
+    window.addEventListener('resize', resize);
+    window.addEventListener('orientationchange', () => setTimeout(resize, 100));
+
+    // Game state
+    const STATE = { START: 0, PLAYING: 1, OVER: 2 };
+    let state = STATE.START;
+
+    const bird = {
+        x: 0, y: 0, r: 16,
+        vy: 0, rot: 0
+    };
+
+    const GRAVITY = 1500;        // px / s^2
+    const FLAP_VELOCITY = -480;  // px / s
+    const PIPE_SPEED = 180;      // px / s
+    const PIPE_GAP = 170;        // gap height
+    const PIPE_WIDTH = 70;
+    const PIPE_INTERVAL = 1.45;  // seconds between pipes
+
+    let pipes = [];
+    let score = 0;
+    let lastT = 0;
+    let spawnT = 0;
+    let groundOffset = 0;
+    const GROUND_H = 70;
+
+    // Cloud decorations
+    let clouds = [];
+    function initClouds() {
+        clouds = [];
+        for (let i = 0; i < 5; i++) {
+            clouds.push({
+                x: Math.random() * W,
+                y: 40 + Math.random() * (H * 0.4),
+                r: 18 + Math.random() * 22,
+                s: 10 + Math.random() * 15
+            });
+        }
+    }
+    initClouds();
+
+    function resetGame() {
+        bird.x = W * 0.28;
+        bird.y = H * 0.45;
+        bird.vy = 0;
+        bird.rot = 0;
+        pipes = [];
+        score = 0;
+        spawnT = 0.6;
+        liveScore.textContent = '0';
+    }
+
+    function flap() {
+        bird.vy = FLAP_VELOCITY;
+    }
+
+    function spawnPipe() {
+        const margin = 60;
+        const minTop = margin;
+        const maxTop = H - GROUND_H - PIPE_GAP - margin;
+        const top = minTop + Math.random() * (maxTop - minTop);
+        pipes.push({ x: W + PIPE_WIDTH, top, scored: false });
+    }
+
+    function update(dt) {
+        if (state !== STATE.PLAYING) return;
+
+        bird.vy += GRAVITY * dt;
+        bird.y += bird.vy * dt;
+        bird.rot = Math.max(-0.4, Math.min(1.2, bird.vy / 600));
+
+        spawnT -= dt;
+        if (spawnT <= 0) {
+            spawnPipe();
+            spawnT = PIPE_INTERVAL;
+        }
+
+        for (const p of pipes) {
+            p.x -= PIPE_SPEED * dt;
+            if (!p.scored && p.x + PIPE_WIDTH < bird.x) {
+                p.scored = true;
+                score++;
+                liveScore.textContent = score;
+            }
+        }
+        pipes = pipes.filter(p => p.x + PIPE_WIDTH > -10);
+
+        // Collisions
+        if (bird.y + bird.r >= H - GROUND_H) {
+            bird.y = H - GROUND_H - bird.r;
+            gameOver();
+            return;
+        }
+        if (bird.y - bird.r <= 0) {
+            bird.y = bird.r;
+            bird.vy = 0;
+        }
+        for (const p of pipes) {
+            if (bird.x + bird.r > p.x && bird.x - bird.r < p.x + PIPE_WIDTH) {
+                if (bird.y - bird.r < p.top || bird.y + bird.r > p.top + PIPE_GAP) {
+                    gameOver();
+                    return;
+                }
+            }
+        }
+
+        groundOffset = (groundOffset + PIPE_SPEED * dt) % 40;
+
+        for (const c of clouds) {
+            c.x -= c.s * dt;
+            if (c.x + c.r < 0) {
+                c.x = W + c.r;
+                c.y = 40 + Math.random() * (H * 0.4);
+            }
+        }
+    }
+
+    function drawSky() {
+        const g = ctx.createLinearGradient(0, 0, 0, H);
+        g.addColorStop(0, '#1a1a3e');
+        g.addColorStop(0.5, '#3d3a6b');
+        g.addColorStop(1, '#ff7a8a');
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, W, H);
+    }
+
+    function drawClouds() {
+        ctx.fillStyle = 'rgba(255,255,255,0.15)';
+        for (const c of clouds) {
+            ctx.beginPath();
+            ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
+            ctx.arc(c.x + c.r * 0.8, c.y + 4, c.r * 0.8, 0, Math.PI * 2);
+            ctx.arc(c.x - c.r * 0.8, c.y + 4, c.r * 0.7, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    function drawPipe(p) {
+        const grad = ctx.createLinearGradient(p.x, 0, p.x + PIPE_WIDTH, 0);
+        grad.addColorStop(0, '#3aa86b');
+        grad.addColorStop(0.5, '#5fd48f');
+        grad.addColorStop(1, '#2d8c56');
+        ctx.fillStyle = grad;
+
+        // Top pipe
+        ctx.fillRect(p.x, 0, PIPE_WIDTH, p.top);
+        // Bottom pipe
+        ctx.fillRect(p.x, p.top + PIPE_GAP, PIPE_WIDTH, H - GROUND_H - (p.top + PIPE_GAP));
+
+        // Caps
+        ctx.fillStyle = '#246b40';
+        ctx.fillRect(p.x - 4, p.top - 18, PIPE_WIDTH + 8, 18);
+        ctx.fillRect(p.x - 4, p.top + PIPE_GAP, PIPE_WIDTH + 8, 18);
+
+        ctx.fillStyle = 'rgba(255,255,255,0.18)';
+        ctx.fillRect(p.x + 6, 0, 6, p.top - 20);
+        ctx.fillRect(p.x + 6, p.top + PIPE_GAP + 22, 6, H - GROUND_H - p.top - PIPE_GAP - 22);
+    }
+
+    function drawGround() {
+        ctx.fillStyle = '#2a1a3a';
+        ctx.fillRect(0, H - GROUND_H, W, GROUND_H);
+        ctx.fillStyle = '#ffd93d';
+        for (let x = -groundOffset; x < W; x += 40) {
+            ctx.fillRect(x, H - GROUND_H, 20, 4);
+        }
+        ctx.fillStyle = 'rgba(0,0,0,0.25)';
+        ctx.fillRect(0, H - GROUND_H + 4, W, 4);
+    }
+
+    function drawBird() {
+        ctx.save();
+        ctx.translate(bird.x, bird.y);
+        ctx.rotate(bird.rot);
+
+        // Body
+        ctx.fillStyle = '#ffd93d';
+        ctx.beginPath();
+        ctx.arc(0, 0, bird.r, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Wing
+        ctx.fillStyle = '#ffb84d';
+        const wingY = Math.sin(performance.now() / 100) * 3;
+        ctx.beginPath();
+        ctx.ellipse(-3, 4 + wingY, 8, 5, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eye
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(6, -4, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#1a1a2e';
+        ctx.beginPath();
+        ctx.arc(7, -4, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Beak
+        ctx.fillStyle = '#ff6b35';
+        ctx.beginPath();
+        ctx.moveTo(bird.r - 2, -2);
+        ctx.lineTo(bird.r + 8, 0);
+        ctx.lineTo(bird.r - 2, 4);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+    function render() {
+        drawSky();
+        drawClouds();
+        for (const p of pipes) drawPipe(p);
+        drawGround();
+        drawBird();
+    }
+
+    function loop(t) {
+        if (!lastT) lastT = t;
+        const dt = Math.min(0.033, (t - lastT) / 1000);
+        lastT = t;
+        update(dt);
+        render();
+        requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+
+    function startGame() {
+        resetGame();
+        state = STATE.PLAYING;
+        startScreen.classList.remove('active');
+        gameOverScreen.classList.remove('active');
+        hud.classList.remove('hidden');
+        backLink.style.display = 'none';
+        // First flap to give some upward momentum
+        flap();
+    }
+
+    function gameOver() {
+        if (state !== STATE.PLAYING) return;
+        state = STATE.OVER;
+        const newBest = score > best;
+        if (newBest) {
+            best = score;
+            localStorage.setItem(STORAGE_KEY, String(best));
+        }
+        liveBest.textContent = 'Best ' + best;
+        finalScore.textContent = score;
+        finalBest.textContent = best;
+        goTitle.textContent = newBest ? '🏆 New Best!' : 'Game Over';
+        goSubtitle.textContent = newBest ? 'You set a new record!' : (score === 0 ? 'Better luck next flap' : 'Nice run!');
+        hud.classList.add('hidden');
+        backLink.style.display = '';
+        setTimeout(() => gameOverScreen.classList.add('active'), 350);
+    }
+
+    // Input
+    function handleTap(e) {
+        if (e) { e.preventDefault(); }
+        if (state === STATE.PLAYING) flap();
+    }
+    canvas.addEventListener('touchstart', handleTap, { passive: false });
+    canvas.addEventListener('mousedown', handleTap);
+    window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' || e.code === 'ArrowUp') {
+            e.preventDefault();
+            if (state === STATE.START) startGame();
+            else if (state === STATE.PLAYING) flap();
+            else if (state === STATE.OVER) startGame();
+        }
+    });
+
+    playBtn.addEventListener('click', startGame);
+    retryBtn.addEventListener('click', startGame);
+
+    // Prevent iOS double-tap zoom and pinch
+    document.addEventListener('gesturestart', (e) => e.preventDefault());
+    document.addEventListener('dblclick', (e) => e.preventDefault());
+})();
+</script>
+</body>
+</html>
