@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Life Tracker - Stocks &amp; News</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* ---- Stocks page specific ---- */
+        .disclaimer {
+            background: rgba(255, 215, 0, 0.08);
+            border: 1px solid var(--warning-color);
+            color: var(--text-secondary);
+            border-radius: 12px;
+            padding: 14px 18px;
+            margin-bottom: 25px;
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+        .disclaimer strong { color: var(--warning-color); }
+
+        .watchlist-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 18px;
+        }
+
+        .stock-card {
+            background: var(--bg-card);
+            border-radius: 14px;
+            padding: 20px;
+            border: 2px solid transparent;
+            position: relative;
+        }
+        .stock-card.signal-buy  { border-color: var(--good-color); }
+        .stock-card.signal-sell { border-color: var(--bad-color); }
+        .stock-card.signal-hold { border-color: var(--warning-color); }
+
+        .stock-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+        .stock-symbol { font-size: 1.4rem; font-weight: 700; }
+        .stock-name { font-size: 0.8rem; color: var(--text-muted); }
+
+        .remove-stock {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 2px 6px;
+            border-radius: 6px;
+            line-height: 1;
+        }
+        .remove-stock:hover { color: var(--bad-color); background: var(--bg-secondary); }
+
+        .price-row {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        .stock-price { font-size: 1.5rem; font-weight: 700; }
+        .stock-change { font-weight: 600; font-size: 0.95rem; }
+        .stock-change.up   { color: var(--good-color); }
+        .stock-change.down { color: var(--bad-color); }
+
+        .signal-badge {
+            display: inline-block;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+        }
+        .signal-badge.buy  { background: rgba(0,255,136,0.15); color: var(--good-color); }
+        .signal-badge.sell { background: rgba(255,107,107,0.15); color: var(--bad-color); }
+        .signal-badge.hold { background: rgba(255,215,0,0.12); color: var(--warning-color); }
+
+        .signal-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .confidence-label { font-size: 0.8rem; color: var(--text-muted); }
+
+        .conf-bar {
+            height: 8px;
+            background: var(--bg-secondary);
+            border-radius: 5px;
+            overflow: hidden;
+            margin-bottom: 6px;
+        }
+        .conf-fill { height: 100%; border-radius: 5px; transition: width 0.6s ease; }
+        .conf-fill.buy  { background: var(--good-color); }
+        .conf-fill.sell { background: var(--bad-color); }
+        .conf-fill.hold { background: var(--warning-color); }
+
+        .signal-why {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin: 10px 0 14px;
+            line-height: 1.45;
+        }
+
+        .news-list { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+        .news-item {
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+            font-size: 0.82rem;
+            line-height: 1.4;
+        }
+        .news-item a { color: var(--text-secondary); text-decoration: none; }
+        .news-item a:hover { color: var(--accent-primary); text-decoration: underline; }
+        .news-dot {
+            flex-shrink: 0;
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            margin-top: 5px;
+        }
+        .news-dot.pos { background: var(--good-color); }
+        .news-dot.neg { background: var(--bad-color); }
+        .news-dot.neu { background: var(--text-muted); }
+
+        .news-toggle {
+            background: none;
+            border: none;
+            color: var(--accent-primary);
+            cursor: pointer;
+            font-size: 0.8rem;
+            padding: 8px 0 0;
+        }
+
+        .card-meta { font-size: 0.72rem; color: var(--text-muted); margin-top: 12px; }
+
+        .loading-note, .empty-note {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 30px;
+        }
+        .source-badge {
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: var(--bg-secondary);
+            color: var(--text-muted);
+        }
+        .toolbar {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 25px;
+        }
+        .refresh-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            color: var(--text-primary);
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .refresh-btn:hover { background: var(--border-light); }
+    </style>
+</head>
+<body>
+    <nav class="main-nav">
+        <div class="nav-brand">🎯 Life Tracker</div>
+        <div class="nav-links">
+            <a href="dashboard.html">Dashboard</a>
+            <a href="index.html">Habits</a>
+            <a href="sleep.html">Sleep</a>
+            <a href="diet.html">Diet</a>
+            <a href="work.html">Work</a>
+            <a href="mood.html">Mood</a>
+            <a href="hydration.html">Water</a>
+            <a href="stocks.html" class="active">Stocks</a>
+            <button id="themeToggle" onclick="toggleTheme()">☀️</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>📈 Stocks &amp; News Signals</h1>
+
+        <div class="disclaimer">
+            <strong>⚠️ Not financial advice.</strong> These BUY / HOLD / SELL signals are a
+            simple heuristic that combines recent <em>news-headline sentiment</em> with
+            short-term <em>price momentum</em>. They are <strong>not predictions</strong> and
+            are nowhere near 100% reliable — markets are unpredictable. Use this to stay
+            informed, not to make decisions. Always do your own research.
+        </div>
+
+        <div class="toolbar">
+            <button class="refresh-btn" onclick="loadAll()">🔄 Refresh</button>
+            <button class="add-btn" style="margin:0;" onclick="openModal()"><span>+</span> Add Ticker</button>
+            <span class="source-badge" id="sourceBadge">—</span>
+        </div>
+
+        <div class="section">
+            <h2>📋 Watchlist</h2>
+            <div class="watchlist-grid" id="watchlist">
+                <div class="loading-note">Loading market data…</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🧠 How the signal works</h2>
+            <p class="signal-why" style="font-size:0.9rem;">
+                For each ticker the app pulls recent headlines and scores them against a
+                lexicon of bullish words (beats, surges, upgrade, record, growth…) and bearish
+                words (misses, plunges, downgrade, lawsuit, layoffs…). That news sentiment is
+                blended with the day's price change to produce a score from −1 to +1:
+                <strong style="color:var(--good-color)">&gt; +0.25 → BUY</strong>,
+                <strong style="color:var(--bad-color)">&lt; −0.25 → SELL</strong>,
+                otherwise <strong style="color:var(--warning-color)">HOLD</strong>.
+                The confidence bar reflects how strong and consistent that signal is — never a guarantee.
+            </p>
+        </div>
+    </div>
+
+    <!-- Add Ticker Modal -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <h2>Add Ticker</h2>
+            <div class="form-group">
+                <label for="tickerSymbol">Ticker symbol</label>
+                <input type="text" id="tickerSymbol" placeholder="e.g., AAPL, MSFT, NVDA" maxlength="8">
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+                <button class="btn-save" onclick="addTicker()">Add</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="shared.js"></script>
+    <script>
+        // ---- State ----
+        const DEFAULT_WATCHLIST = ['AAPL', 'MSFT', 'NVDA', 'TSLA', 'GOOGL', 'AMZN'];
+        let watchlist = JSON.parse(localStorage.getItem('stockWatchlist')) || DEFAULT_WATCHLIST.slice();
+        let cardData = {}; // symbol -> computed data
+
+        // ---- Sentiment lexicon ----
+        const POSITIVE = ['beat','beats','surge','surges','soar','soars','jump','jumps','rally','rallies',
+            'gain','gains','upgrade','upgraded','record','growth','grow','profit','profits','strong','rises',
+            'rise','outperform','bullish','buy','raises','raised','boost','boosted','wins','win','approval',
+            'approved','breakthrough','expand','expands','dividend','rebound','optimistic','tops','high','soaring'];
+        const NEGATIVE = ['miss','misses','plunge','plunges','slump','slumps','drop','drops','fall','falls',
+            'downgrade','downgraded','lawsuit','recall','loss','losses','cut','cuts','weak','layoff','layoffs',
+            'probe','bearish','sell','warning','warns','decline','declines','slip','slips','crash','tumble',
+            'tumbles','fraud','fine','fined','sinks','sink','plummet','plummets','concern','concerns','risk','slowdown'];
+
+        // ---- CORS proxies (tried in order) for free, key-less fetching ----
+        const PROXIES = [
+            url => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
+            url => 'https://corsproxy.io/?url=' + encodeURIComponent(url)
+        ];
+
+        async function proxiedFetch(targetUrl) {
+            for (const wrap of PROXIES) {
+                try {
+                    const res = await fetch(wrap(targetUrl), { cache: 'no-store' });
+                    if (res.ok) {
+                        const text = await res.text();
+                        if (text && text.length > 10) return text;
+                    }
+                } catch (e) { /* try next proxy */ }
+            }
+            throw new Error('All proxies failed');
+        }
+
+        // ---- News (Yahoo Finance RSS) ----
+        async function fetchNews(symbol) {
+            const rss = `https://feeds.finance.yahoo.com/rss/2.0/headline?s=${symbol}&region=US&lang=en-US`;
+            const xml = await proxiedFetch(rss);
+            const doc = new DOMParser().parseFromString(xml, 'text/xml');
+            const items = [...doc.querySelectorAll('item')].slice(0, 8);
+            return items.map(it => ({
+                title: (it.querySelector('title')?.textContent || '').trim(),
+                link: it.querySelector('link')?.textContent || '#',
+                date: it.querySelector('pubDate')?.textContent || ''
+            })).filter(n => n.title);
+        }
+
+        // ---- Quote (Stooq CSV: symbol,date,time,open,high,low,close,volume,name) ----
+        async function fetchQuote(symbol) {
+            const url = `https://stooq.com/q/l/?s=${symbol.toLowerCase()}.us&f=sd2t2ohlcvn&h&e=csv`;
+            const csv = await proxiedFetch(url);
+            const lines = csv.trim().split('\n');
+            if (lines.length < 2) throw new Error('no quote');
+            const cols = lines[1].split(',');
+            const open = parseFloat(cols[3]);
+            const close = parseFloat(cols[6]);
+            if (!isFinite(close)) throw new Error('bad quote');
+            const changePct = (isFinite(open) && open !== 0) ? ((close - open) / open) * 100 : 0;
+            return { price: close, changePct, name: (cols[8] || symbol).replace(/"/g, '') };
+        }
+
+        // ---- Sentiment scoring ----
+        function scoreHeadline(title) {
+            const words = title.toLowerCase().replace(/[^a-z\s]/g, ' ').split(/\s+/);
+            let s = 0;
+            words.forEach(w => {
+                if (POSITIVE.includes(w)) s += 1;
+                if (NEGATIVE.includes(w)) s -= 1;
+            });
+            return s > 0 ? 1 : s < 0 ? -1 : 0;
+        }
+
+        function computeSignal(news, changePct) {
+            const scored = news.map(n => ({ ...n, sentiment: scoreHeadline(n.title) }));
+            const counted = scored.filter(n => n.sentiment !== 0).length;
+            const sum = scored.reduce((a, n) => a + n.sentiment, 0);
+            const newsScore = counted > 0 ? sum / counted : 0;          // -1..1
+            const momentum = Math.max(-1, Math.min(1, changePct / 4));  // ±4% -> ±1
+            const score = 0.6 * newsScore + 0.4 * momentum;             // -1..1
+
+            let signal = 'hold';
+            if (score > 0.25) signal = 'buy';
+            else if (score < -0.25) signal = 'sell';
+
+            // confidence: strength of score + how much news we actually have
+            const dataBoost = Math.min(15, counted * 3);
+            let confidence = Math.round(Math.abs(score) * 80 + dataBoost);
+            confidence = Math.max(20, Math.min(95, confidence));
+
+            const pos = scored.filter(n => n.sentiment > 0).length;
+            const neg = scored.filter(n => n.sentiment < 0).length;
+            return { signal, confidence, score, scored, pos, neg, counted };
+        }
+
+        function explain(d, changePct) {
+            const parts = [];
+            if (d.counted > 0) {
+                parts.push(`${d.pos} bullish vs ${d.neg} bearish headline${(d.pos+d.neg)===1?'':'s'}`);
+            } else {
+                parts.push('no clear sentiment in recent headlines');
+            }
+            const dir = changePct >= 0 ? 'up' : 'down';
+            parts.push(`price ${dir} ${Math.abs(changePct).toFixed(2)}% today`);
+            return parts.join(' · ');
+        }
+
+        // ---- Sample fallback (used when live fetch is blocked/offline) ----
+        const SAMPLE = {
+            AAPL: { price: 213.55, changePct: 1.2, name: 'Apple Inc.', news: [
+                { title: 'Apple beats earnings as iPhone sales surge to record high', link:'#' },
+                { title: 'Analysts upgrade Apple on strong services growth', link:'#' },
+                { title: 'Apple expands AI features across product line', link:'#' } ] },
+            MSFT: { price: 467.30, changePct: 0.4, name: 'Microsoft Corp.', news: [
+                { title: 'Microsoft cloud revenue grows, Azure tops estimates', link:'#' },
+                { title: 'Microsoft raises dividend after strong quarter', link:'#' } ] },
+            NVDA: { price: 131.20, changePct: -2.1, name: 'NVIDIA Corp.', news: [
+                { title: 'NVIDIA shares slump on chip export concerns', link:'#' },
+                { title: 'Analysts warn of slowdown in data-center demand', link:'#' },
+                { title: 'NVIDIA still posts record revenue despite the drop', link:'#' } ] },
+            TSLA: { price: 248.90, changePct: -3.4, name: 'Tesla Inc.', news: [
+                { title: 'Tesla deliveries miss estimates, stock falls', link:'#' },
+                { title: 'Tesla recall raises safety concerns', link:'#' } ] },
+            GOOGL:{ price: 178.45, changePct: 0.1, name: 'Alphabet Inc.', news: [
+                { title: 'Alphabet ad revenue steady amid competition', link:'#' } ] },
+            AMZN: { price: 207.10, changePct: 1.8, name: 'Amazon.com Inc.', news: [
+                { title: 'Amazon profit jumps on cloud and ads strength', link:'#' },
+                { title: 'Amazon gains as holiday sales beat forecasts', link:'#' } ] }
+        };
+
+        function sampleFor(symbol) {
+            return SAMPLE[symbol] || { price: 100, changePct: 0, name: symbol, news: [
+                { title: `No sample data for ${symbol} — connect online for live headlines`, link:'#' } ] };
+        }
+
+        // ---- Loading ----
+        let usedLive = false;
+
+        async function loadOne(symbol) {
+            let quote, news;
+            try {
+                [quote, news] = await Promise.all([fetchQuote(symbol), fetchNews(symbol)]);
+                usedLive = true;
+            } catch (e) {
+                const s = sampleFor(symbol);
+                quote = { price: s.price, changePct: s.changePct, name: s.name };
+                news = s.news;
+            }
+            const sig = computeSignal(news, quote.changePct);
+            cardData[symbol] = { symbol, ...quote, ...sig, news, expanded: false };
+        }
+
+        async function loadAll() {
+            const grid = document.getElementById('watchlist');
+            document.getElementById('sourceBadge').textContent = 'loading…';
+            if (watchlist.length === 0) {
+                grid.innerHTML = '<div class="empty-note">No tickers yet. Click “Add Ticker” to start.</div>';
+                document.getElementById('sourceBadge').textContent = '—';
+                return;
+            }
+            grid.innerHTML = '<div class="loading-note">Fetching headlines &amp; prices…</div>';
+            usedLive = false;
+            cardData = {};
+            await Promise.all(watchlist.map(loadOne));
+            render();
+            document.getElementById('sourceBadge').textContent = usedLive
+                ? '🟢 live data · ' + new Date().toLocaleTimeString()
+                : '🟡 sample data (live fetch blocked)';
+        }
+
+        function render() {
+            const grid = document.getElementById('watchlist');
+            grid.innerHTML = watchlist.map(sym => {
+                const d = cardData[sym];
+                if (!d) return '';
+                const changeCls = d.changePct >= 0 ? 'up' : 'down';
+                const sign = d.changePct >= 0 ? '+' : '';
+                const visibleNews = d.expanded ? d.scored : d.scored.slice(0, 3);
+                const newsHtml = visibleNews.map(n => {
+                    const dot = n.sentiment > 0 ? 'pos' : n.sentiment < 0 ? 'neg' : 'neu';
+                    return `<div class="news-item">
+                        <span class="news-dot ${dot}"></span>
+                        <a href="${n.link}" target="_blank" rel="noopener">${escapeHtml(n.title)}</a>
+                    </div>`;
+                }).join('');
+                const toggle = d.scored.length > 3
+                    ? `<button class="news-toggle" onclick="toggleNews('${sym}')">${d.expanded ? 'Show less' : 'Show ' + (d.scored.length - 3) + ' more'}</button>`
+                    : '';
+                return `
+                    <div class="stock-card signal-${d.signal}">
+                        <div class="stock-head">
+                            <div>
+                                <div class="stock-symbol">${sym}</div>
+                                <div class="stock-name">${escapeHtml(d.name || '')}</div>
+                            </div>
+                            <button class="remove-stock" title="Remove" onclick="removeTicker('${sym}')">✕</button>
+                        </div>
+                        <div class="price-row">
+                            <span class="stock-price">$${d.price.toFixed(2)}</span>
+                            <span class="stock-change ${changeCls}">${sign}${d.changePct.toFixed(2)}%</span>
+                        </div>
+                        <div class="signal-line">
+                            <span class="signal-badge ${d.signal}">${d.signal.toUpperCase()}</span>
+                            <span class="confidence-label">${d.confidence}% confidence</span>
+                        </div>
+                        <div class="conf-bar"><div class="conf-fill ${d.signal}" style="width:${d.confidence}%"></div></div>
+                        <div class="signal-why">${explain(d, d.changePct)}</div>
+                        <div class="news-list">${newsHtml || '<span class="confidence-label">No headlines found.</span>'}</div>
+                        ${toggle}
+                    </div>`;
+            }).join('');
+        }
+
+        function escapeHtml(str) {
+            return String(str).replace(/[&<>"']/g, c =>
+                ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+        }
+
+        function toggleNews(sym) {
+            if (cardData[sym]) { cardData[sym].expanded = !cardData[sym].expanded; render(); }
+        }
+
+        // ---- Watchlist management ----
+        function saveWatchlist() {
+            localStorage.setItem('stockWatchlist', JSON.stringify(watchlist));
+        }
+
+        function openModal() {
+            document.getElementById('tickerSymbol').value = '';
+            document.getElementById('modalOverlay').classList.add('active');
+            document.getElementById('tickerSymbol').focus();
+        }
+        function closeModal() {
+            document.getElementById('modalOverlay').classList.remove('active');
+        }
+        function addTicker() {
+            const input = document.getElementById('tickerSymbol');
+            const sym = input.value.trim().toUpperCase().replace(/[^A-Z.]/g, '');
+            if (!sym) { alert('Enter a ticker symbol'); return; }
+            if (watchlist.includes(sym)) { alert(sym + ' is already in your watchlist'); closeModal(); return; }
+            watchlist.push(sym);
+            saveWatchlist();
+            closeModal();
+            loadOne(sym).then(() => {
+                render();
+                document.getElementById('sourceBadge').textContent = usedLive
+                    ? '🟢 live data · ' + new Date().toLocaleTimeString()
+                    : '🟡 sample data (live fetch blocked)';
+            });
+        }
+        function removeTicker(sym) {
+            watchlist = watchlist.filter(s => s !== sym);
+            delete cardData[sym];
+            saveWatchlist();
+            if (watchlist.length === 0) {
+                document.getElementById('watchlist').innerHTML =
+                    '<div class="empty-note">No tickers yet. Click “Add Ticker” to start.</div>';
+            } else {
+                render();
+            }
+        }
+
+        document.getElementById('modalOverlay').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+        document.getElementById('tickerSymbol').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') addTicker();
+        });
+
+        loadAll();
+    </script>
+</body>
+</html>
